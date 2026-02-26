@@ -28,7 +28,7 @@ export const LOCATORS = {
   ARTICLE_PREVIEW: '.article-preview',
   ARTICLE_PREVIEW_TITLE: '.article-preview h1',
   ARTICLE_PREVIEW_AUTHOR: '.article-preview .author',
-  ARTICLE_PREVIEW_FAVORITE_BTN: 'button.btn-outline-primary',
+  ARTICLE_PREVIEW_FAVORITE_BTN: 'button.btn',
   POPULAR_TAGS: '.tag-list a',
 
   // Article editor
@@ -36,6 +36,7 @@ export const LOCATORS = {
   ARTICLE_DESCRIPTION_INPUT: 'input[placeholder="What\'s this article about?"]',
   ARTICLE_BODY_TEXTAREA: 'textarea[placeholder="Write your article (in markdown)"]',
   ARTICLE_TAGS_INPUT: 'input[placeholder="Enter tags"]',
+  ARTICLE_TAG_LIST_ITEM: '.tag-list .tag-pill',
   PUBLISH_ARTICLE_BUTTON: 'button:has-text("Publish Article")',
   DELETE_ARTICLE_BUTTON: 'button:has-text("Delete Article")',
 

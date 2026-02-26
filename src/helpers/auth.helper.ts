@@ -15,14 +15,14 @@ export const login = async (
   await page.fill(LOCATORS.EMAIL_INPUT, email);
   await page.fill(LOCATORS.PASSWORD_INPUT, password);
   await expect(page.locator(LOCATORS.SIGN_IN_BUTTON)).toBeEnabled();
-  
+
   const responsePromise = page.waitForResponse(
     (response) =>
       response.url().includes(API_PATHS.LOGIN) &&
       response.request().method() === 'POST' &&
       response.status() === statusCode
   );
-  
+
   await page.click(LOCATORS.SIGN_IN_BUTTON);
   await responsePromise;
   await waitForPageLoad(page);
@@ -75,10 +75,10 @@ export const getErrorMessages = async (page: Page): Promise<string[]> => {
  */
 export const logout = async (page: Page): Promise<void> => {
   await page.click(LOCATORS.SETTINGS_LINK);
-  await page.waitForSelector(LOCATORS.LOGOUT_BUTTON, { state: 'visible' });
+  await expect(page.locator(LOCATORS.LOGOUT_BUTTON)).toBeVisible();
   await page.click(LOCATORS.LOGOUT_BUTTON);
   await waitForPageLoad(page);
-  await page.waitForSelector(LOCATORS.LOGOUT_BUTTON, { state: 'hidden' });
+  await expect(page.locator(LOCATORS.LOGOUT_BUTTON)).toBeHidden();
 };
 
 /**
@@ -90,7 +90,7 @@ export const verifyLoggedIn = async (page: Page): Promise<boolean> => {
     if (token === null || token.length === 0) {
       return false;
     }
-    await page.waitForSelector(LOCATORS.SETTINGS_LINK, { state: 'visible' });
+    await expect(page.locator(LOCATORS.SETTINGS_LINK)).toBeVisible();
     return true;
   } catch {
     return false;
@@ -114,5 +114,6 @@ export const registerAndLogin = async (
   await clickSignUpAndConfirm(page);
   await navigateToLogin(page);
   await login(page, registeredUser.email, registeredUser.password);
+  await verifyLoggedIn(page);
   return registeredUser;
 };

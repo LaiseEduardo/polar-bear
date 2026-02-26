@@ -9,7 +9,7 @@ export const PATHS = {
 
 export const API_PATHS = {
   ARTICLES: '/api/articles',
-  ARTICLES_FEED: '/feed',
+  ARTICLES_FEED: '/api/articles/feed',
   FAVORITE_ARTICLE: '/favorite',
   FOLLOW_USER: '/follow',
   COMMENTS: '/comments',

@@ -7,7 +7,6 @@ import { LOCATORS, PATHS } from '@constants/index';
 export const navigateToHome = async (page: Page): Promise<void> => {
   await page.goto(PATHS.HOME);
   await waitForPageLoad(page);
-  await page.waitForSelector(LOCATORS.HOME_LINK, { state: 'visible' });
 };
 
 /**
@@ -23,10 +22,7 @@ export const clickHomeLink = async (page: Page): Promise<void> => {
  */
 export const navigateToLogin = async (page: Page): Promise<void> => {
   await navigateToHome(page);
-  // Ensure Sign in link is visible before navigating
-  await page.waitForSelector(LOCATORS.SIGN_IN_LINK, {
-    state: 'visible',
-  });
+  await expect(page.locator(LOCATORS.SIGN_IN_LINK)).toBeVisible();
   await page.goto(PATHS.LOGIN);
   await waitForPageLoad(page);
 };
@@ -44,10 +40,7 @@ export const clickSignInLink = async (page: Page): Promise<void> => {
  */
 export const navigateToRegister = async (page: Page): Promise<void> => {
   await navigateToHome(page);
-  // Ensure Sign up link is visible before navigating
-  await page.waitForSelector(LOCATORS.SIGN_UP_LINK, {
-    state: 'visible',
-  });
+  await expect(page.locator(LOCATORS.SIGN_UP_LINK)).toBeVisible();
   await page.goto(PATHS.REGISTER);
   await waitForPageLoad(page);
 };
@@ -73,7 +66,6 @@ export const navigateToArticle = async (page: Page, slug: string): Promise<void>
  */
 export const waitForPageLoad = async (page: Page): Promise<void> => {
   await page.waitForLoadState('domcontentloaded');
-  await page.waitForLoadState('networkidle');
 };
 
 /**
@@ -81,7 +73,7 @@ export const waitForPageLoad = async (page: Page): Promise<void> => {
  */
 export const navigateToProfile = async (page: Page, username: string): Promise<void> => {
   await page.click(`a[href="#/profile/${username}"]`);
-  await page.waitForSelector(`.profile-page h4:has-text("${username}")`, { state: 'visible' });
+  await expect(page.locator(`.profile-page h4:has-text("${username}")`)).toBeVisible();
   await waitForPageLoad(page);
 };
 

@@ -11,12 +11,14 @@ A clean, maintainable test automation framework for the [RealWorld demo applicat
 ## 📋 Requirements
 
 ### Required
+
 - **Node.js**: v18.5.0+ ([Download](https://nodejs.org/))
 - **npm**: v9.0.0+ (comes with Node.js)
 - **Docker Desktop**: Latest version ([Download](https://www.docker.com/products/docker-desktop))
 - **Git**: For cloning the repository
 
 ### Recommended
+
 - **NVM** (Node Version Manager): For managing Node.js versions ([Install Guide](https://github.com/nvm-sh/nvm))
 
 ### Verify Installation
@@ -59,6 +61,7 @@ npm run setup:automated
 ```
 
 This automated script will:
+
 - ✅ Check all prerequisites (Docker, Node.js)
 - ✅ Install npm dependencies
 - ✅ Install Playwright browsers
@@ -197,6 +200,7 @@ npm run report:open
 ```
 
 Reports are located in `playwright-report/` directory and include:
+
 - Screenshots on failure
 - Videos on failure
 - Traces for debugging
@@ -225,17 +229,20 @@ test.describe('Feature Name @feature', () => {
 ### Test Suites
 
 **Authentication** (`tests/auth/auth.spec.ts`)
+
 - User registration
 - User login
 - Navigation between auth pages
 
 **Articles** (`tests/articles/articles.spec.ts`)
+
 - Create articles
 - View my articles
 - Add comments
 - Delete articles
 
 **Feed** (`tests/feed/feed.spec.ts`)
+
 - View global feed
 - Follow users
 - View personalized feed
@@ -256,6 +263,7 @@ test('example test', async ({ page }) => {
 ## 🔄 CI/CD
 
 GitHub Actions workflow runs automatically on:
+
 - Push to main
 - Pull requests
 - Daily schedule (2 AM UTC)
@@ -265,6 +273,7 @@ Configuration: `.github/workflows/playwright.yml`
 ## 🛠 Code Quality
 
 Run linting:
+
 ```bash
 npm run lint                       # Check code quality
 npm run lint:fix                   # Auto-fix issues

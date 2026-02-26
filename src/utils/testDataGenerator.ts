@@ -1,4 +1,5 @@
 import { faker } from '@faker-js/faker';
+import type { Article, User } from '../types';
 
 /**
  * Test Data Generator
@@ -8,7 +9,7 @@ import { faker } from '@faker-js/faker';
 /**
  * Generate random user data
  */
-export const generateUser = (prefix?: string) => {
+export const generateUser = (prefix?: string): User => {
   const timestamp = Date.now();
   const randomString = faker.string.alphanumeric(5).toLowerCase();
   return {
@@ -23,7 +24,7 @@ export const generateUser = (prefix?: string) => {
 /**
  * Generate random article data
  */
-export const generateArticle = () => {
+export const generateArticle = (): Article => {
   return {
     title: faker.lorem.sentence().substring(0, 50).trim(),
     description: faker.lorem.sentences(2).substring(0, 100),

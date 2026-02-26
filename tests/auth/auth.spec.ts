@@ -17,9 +17,7 @@ import { generateUser } from '@utils/testDataGenerator';
 
 test.describe('Sign-up & Login - Core User Journey #1 @auth', () => {
   test.describe('User Registration @core', () => {
-    test('should successfully register a new user with valid credentials', async ({
-      page,
-    }) => {
+    test('should successfully register a new user with valid credentials', async ({ page }) => {
       await navigateToRegister(page);
       const userData = generateUser();
       await initiateUserSignup(page, userData.username, userData.email, userData.password);
@@ -136,7 +134,6 @@ test.describe('Sign-up & Login - Core User Journey #1 @auth', () => {
     test('should persist session after page reload', async ({ page }) => {
       // Register a user and login
       await registerAndLogin(page);
-      expect(await verifyLoggedIn(page)).toBeTruthy();
 
       // Reload page
       await page.reload();

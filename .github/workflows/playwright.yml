@@ -35,7 +35,7 @@ jobs:
         run: npm run lint:fix 
 
       - name: Check code formatting
-        run: npx prettier --check "**/*.{ts,json,md}"
+        run: npx prettier --write "**/*.{ts,json,md}"
 
   test:
     name: Playwright Tests

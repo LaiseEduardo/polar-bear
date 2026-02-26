@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+test-results/
+playwright-report/
+
+# Application folder (contains separate Angular/NestJS projects)
+app/
+
+# Package manager files
+package-lock.json

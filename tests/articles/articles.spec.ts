@@ -16,9 +16,10 @@ import {
   verifySuccessMessage,
 } from '@helpers/index';
 import { generateArticle, generateComment } from '@utils/testDataGenerator';
+import type { User } from '../../src/types';
 
 test.describe('Write Article - Core User Journey #2 @articles', () => {
-  let registeredUser: { username: string; email: string; password: string };
+  let registeredUser: User;
 
   test.beforeEach(async ({ page }) => {
     // Register and login a user
@@ -26,9 +27,7 @@ test.describe('Write Article - Core User Journey #2 @articles', () => {
     await verifyLoggedIn(page);
   });
 
-  test('should create an article and display in My Articles List @core', async ({
-    page,
-  }) => {
+  test('should create an article and display in My Articles List @core', async ({ page }) => {
     // Generate article data
     const articleData = generateArticle();
 
@@ -59,9 +58,7 @@ test.describe('Write Article - Core User Journey #2 @articles', () => {
   });
 
   test.describe('Additional Tests @articles', () => {
-    test('should create article with multiple tags', async ({
-      page,
-    }) => {
+    test('should create article with multiple tags', async ({ page }) => {
       const articleData = generateArticle();
       const tags = ['testing', 'automation', 'playwright'];
 
@@ -103,8 +100,7 @@ test.describe('Write Article - Core User Journey #2 @articles', () => {
       await navigateToNewArticle(page);
 
       // Try to submit without filling fields
-      await page.waitForSelector(LOCATORS.PUBLISH_ARTICLE_BUTTON);
-      expect(await page.locator(LOCATORS.PUBLISH_ARTICLE_BUTTON).isDisabled()).toBe(true);
+      await expect(page.locator(LOCATORS.PUBLISH_ARTICLE_BUTTON)).toBeDisabled();
     });
   });
 });
@@ -136,4 +132,3 @@ test.describe('Comments - Additional Tests #5 @articles', () => {
     expect(updatedComments.some((c) => c.includes(commentText))).toBeFalsy();
   });
 });
-

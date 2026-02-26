@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { LOCATORS } from '@constants/index';
 import {
+  clickHomeLink,
   clickSignUpAndConfirm,
   createArticle,
   favoriteArticleInFeed,
@@ -26,10 +27,11 @@ import {
   waitForPageLoad,
 } from '@helpers/index';
 import { generateArticle, generateUser } from '@utils/testDataGenerator';
+import type { User } from '../../src/types';
 
 test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
-  let userA: { username: string; email: string; password: string };
-  let userB: { username: string; email: string; password: string };
+  let userA: User;
+  let userB: User;
 
   test.beforeEach(async ({ page }) => {
     // Generate follower user
@@ -52,12 +54,11 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
       articleData.body,
       ['test', 'follow-feed']
     );
+    await verifySuccessMessage(page, /Published successfully!/i);
     await logout(page);
   });
 
-  test('should show followed user article in Your Feed', async ({
-    page,
-  }) => {
+  test('should show articles from followed users in Your Feed', async ({ page }) => {
     // Step 1: User A logs in
     await navigateToLogin(page);
     await login(page, userA.email, userA.password);
@@ -109,19 +110,17 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
     const feedArticles = await getArticleTitles(page);
     expect(feedArticles).toContain(articleData.title);
 
+    await expect(page.locator(LOCATORS.ARTICLE_PREVIEW).first()).toBeVisible();
     // Verify the author is User B
     const firstArticleAuthor = await page
-      .locator(LOCATORS.ARTICLE_PREVIEW)
+      .locator(LOCATORS.ARTICLE_PREVIEW_AUTHOR)
       .first()
-      .locator('.author')
       .textContent();
     expect(firstArticleAuthor?.trim()).toBe(userB.username);
   });
 
   test.describe('Follow Feed - Additional Tests @feed', () => {
-    test('should not show unfollowed user article in My Feed', async ({
-      page,
-    }) => {
+    test('should not show unfollowed user article in My Feed', async ({ page }) => {
       // User A logs in (without following User B)
       await navigateToLogin(page);
       await login(page, userA.email, userA.password);
@@ -148,9 +147,7 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
       }
     });
 
-    test('should allow unfollow and article disappears from feed', async ({
-      page,
-    }) => {
+    test('should allow unfollow and the article disappears from feed', async ({ page }) => {
       // User A logs in and follows User B
       await navigateToLogin(page);
       await login(page, userA.email, userA.password);
@@ -193,7 +190,7 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
       await expect(page.locator(LOCATORS.FOLLOW_BUTTON)).toBeVisible();
 
       // Check My Feed - article should not be there
-      await navigateToHome(page);
+      await clickHomeLink(page);
       await switchToMyFeed(page);
 
       // My Feed might be empty or show "No articles are here... yet"
@@ -204,6 +201,7 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
         await expect(noArticlesMessage).toBeVisible();
       } else {
         // If there are articles, verify none are from User B
+        await expect(page.locator(LOCATORS.ARTICLE_PREVIEW).last()).toBeVisible();
         const feedArticles = await page.locator(LOCATORS.ARTICLE_PREVIEW_AUTHOR).allTextContents();
         expect(feedArticles.every((author) => author.trim() !== userB.username)).toBeTruthy();
       }
@@ -214,7 +212,7 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
       await navigateToHome(page);
 
       const myFeedTab = page.locator(LOCATORS.MY_FEED_TAB);
-      await expect(myFeedTab).not.toBeVisible();
+      await expect(myFeedTab).toBeHidden();
 
       // When logged in, My Feed should be visible
       await navigateToLogin(page);

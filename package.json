@@ -15,6 +15,7 @@
     "app:start": "cd app && docker compose up -d && cd ..",
     "app:stop": "cd app && docker compose down && cd ..",
     "app:restart": "npm run app:stop && npm run app:start",
+    "app:reset": "cd app && docker compose down -v --remove-orphans && docker compose up -d && cd ..",
     "report:open": "npx playwright show-report",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",

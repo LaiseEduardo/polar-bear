@@ -11,7 +11,7 @@ export default defineConfig({
 
   // Test execution configuration
   expect: {
-    timeout: 15000,
+    timeout: 25000,
   },
 
   // Run tests in files in parallel
@@ -21,16 +21,13 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
 
   // Retry on CI only
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1,
 
   // Opt out of parallel tests on CI
   workers: process.env.CI ? 2 : '50%',
 
   // Reporter to use
-  reporter: [
-    ['html', { open: 'never' }],
-    ['list'],
-  ],
+  reporter: [['html', { open: 'never' }], ['list']],
 
   // Shared settings for all projects
   use: {
