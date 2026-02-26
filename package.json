@@ -1,0 +1,46 @@
+{
+  "name": "polar-bear-automation",
+  "version": "1.0.0",
+  "description": "Polar Bear Engineer Assessment - Playwright Automation Testing",
+  "scripts": {
+    "test": "./run-tests.sh",
+    "test:core": "./run-tests.sh --grep @core",
+    "test:auth": "./run-tests.sh tests/auth/**.spec.ts",
+    "test:articles": "./run-tests.sh tests/articles/**.spec.ts",
+    "test:feed": "./run-tests.sh tests/feed/**.spec.ts",
+    "test:headed": "./run-tests.sh --headed",
+    "test:debug": "dotenv -e .env -- playwright test --debug",
+    "test:ui": "dotenv -e .env -- playwright test --ui",
+    "setup:automated": "./setup-local.sh",
+    "app:start": "cd app && docker compose up -d && cd ..",
+    "app:stop": "cd app && docker compose down && cd ..",
+    "app:restart": "npm run app:stop && npm run app:start",
+    "report:open": "npx playwright show-report",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"**/*.{ts,json,md}\"",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf test-results playwright-report",
+    "install:browsers": "npx playwright install --with-deps"
+  },
+  "keywords": [
+    "playwright",
+    "typescript"
+  ],
+  "author": "Laise Eduardo",
+  "license": "MIT",
+  "devDependencies": {
+    "@faker-js/faker": "^8.4.1",
+    "@playwright/test": "^1.41.0",
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "dotenv": "^16.4.0",
+    "dotenv-cli": "^7.3.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-playwright": "^0.22.0",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3"
+  }
+}

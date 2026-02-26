@@ -1,0 +1,40 @@
+<a routerLink="/profile/{{article.author.username}}"><img [src]="article.author.image || DEFAULT_PROFILE_IMAGE" /></a>
+<div class="info">
+  <a routerLink="/profile/{{article.author.username}}" class="author">{{ article.author.username }}</a>
+  <span class="date">{{ article.updatedAt | date }}</span>
+</div>
+
+@if (enableUserActions) {
+  @if (article.author.following) {
+    <button class="btn btn-sm btn-outline-danger" (click)="followed.emit(false)">
+      <i class="ion-minus-round"></i>
+      Unfollow {{ article.author.username }}
+    </button>
+  } @else {
+    <button class="btn btn-sm btn-outline-secondary" (click)="followed.emit(true)">
+      <i class="ion-plus-round"></i>
+      Follow {{ article.author.username }}
+    </button>
+  }
+
+  @if (article.favorited) {
+    <button class="btn btn-sm btn-outline-primary" (click)="favorited.emit(false)">
+      <i class="ion-heart"></i>
+      Unfavorite Article <span class="counter">({{ article.favoritesCount }})</span>
+    </button>
+  } @else {
+    <button class="btn btn-sm btn-outline-primary" (click)="favorited.emit(true)">
+      <i class="ion-heart"></i>
+      Favorite Article <span class="counter">({{ article.favoritesCount }})</span>
+    </button>
+  }
+}
+
+@if (enableAuthorActions) {
+  <button class="btn btn-sm btn-outline-secondary" routerLink="/editor/{{article.slug}}">
+    <i class="ion-edit"></i> Edit Article
+  </button>
+  <button class="btn btn-sm btn-outline-danger" (click)="deleted.emit()">
+    <i class="ion-trash-a"></i> Delete Article
+  </button>
+}

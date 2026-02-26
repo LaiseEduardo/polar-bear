@@ -1,0 +1,39 @@
+<ul class="error-messages">
+  @if (form()?.errors && form()?.touched) {
+    @for (error of form()!.errors | keyvalue; track error.key) {
+      <ng-container *ngTemplateOutlet="formErrorMsg; context: { key: error.key, value: error.value }"></ng-container>
+    }
+  }
+
+  @if (errors()) {
+    @for (error of errors() | keyvalue; track error.key) {
+      @if (error.key && error.key != 'non_field_errors') {
+        <li>{{error.key | titlecase}}: {{error.value}}</li>
+      } @else {
+        <li>{{error.value}}</li>
+      }
+    }
+  }
+</ul>
+
+<ng-template #formErrorMsg let-key="key" let-value="value">
+  @if (value) {
+    @switch(key) {
+      @case ('required') {
+        Field is required
+      }
+      @case ('minlength') {
+        Field is too short
+      }
+      @case ('maxlength') {
+        Field is too long
+      }
+      @case ('email') {
+        Invalid email
+      }
+      @default {
+        Field is invalid
+      }
+    }
+  }
+</ng-template>

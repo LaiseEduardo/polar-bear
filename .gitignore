@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Testing
+test-results/
+playwright-report/
+playwright/.cache/
+
+# IDE
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+

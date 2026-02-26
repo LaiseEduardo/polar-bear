@@ -1,0 +1,54 @@
+<div class="row">
+  <div class="col-xs-12 col-md-8 offset-md-2">
+    @if (currentUser()) {
+      <form class="card comment-form">
+        <div class="card-block">
+        <textarea [formControl]="newCommentControl" class="form-control" placeholder="Write a comment..." rows="3">
+        </textarea>
+        </div>
+        <div class="card-footer">
+          <img [src]="currentUser()!.image || DEFAULT_PROFILE_IMAGE" class="comment-author-img"/>
+          <button type="button" class="btn btn-sm btn-primary" (click)="addComment()">Post Comment</button>
+        </div>
+      </form>
+    } @else {
+      <p>
+        <a routerLink="/login" [queryParams]="loginUrlTree.queryParams">Sign in</a>
+        or
+        <a routerLink="/register">sign up</a>
+        to add comments on this article.
+      </p>
+    }
+
+    @if (comments()) {
+      @for (comment of comments(); track comment.id) {
+        <ng-container *ngTemplateOutlet="singleComment; context: { $implicit: comment }"></ng-container>
+      }
+    }
+  </div>
+</div>
+
+<ng-template #singleComment let-comment>
+  <div class="card">
+    <div class="card-block">
+      <p class="card-text">
+        {{ comment.body }}
+      </p>
+    </div>
+    <div class="card-footer">
+      <a routerLink="/profile/{{comment.author.username}}" class="comment-author">
+        <img [src]="comment.author.image || DEFAULT_PROFILE_IMAGE" class="comment-author-img"/>
+      </a>
+      &nbsp;
+      <a routerLink="/profile/{{comment.author.username}}" class="comment-author">{{ comment.author.username }}</a>
+      <span class="date-posted">{{ comment.createdAt | date }}</span>
+
+      <!-- Allow the user to delete their own comments-->
+      @if (comment.author.username === currentUser()?.username) {
+        <span class="mod-options">
+          <i class="ion-trash-a" (click)="deleteComment(comment.id)"></i>
+        </span>
+      }
+    </div>
+  </div>
+</ng-template>
