@@ -54,7 +54,6 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
       articleData.body,
       ['test', 'follow-feed']
     );
-    await verifySuccessMessage(page, /Published successfully!/i);
     await logout(page);
   });
 

@@ -1,5 +1,5 @@
 import { expect, Page } from '@playwright/test';
-import { waitForPageLoad } from '@helpers/index';
+import { verifySuccessMessage, waitForPageLoad } from '@helpers/index';
 import { API_PATHS, LOCATORS } from '@constants/index';
 
 /**
@@ -46,7 +46,6 @@ export const switchToMyFeed = async (page: Page, statusCode: number = 200): Prom
   await expect(page.locator(LOCATORS.MY_FEED_TAB)).toBeEnabled();
   await page.click(LOCATORS.MY_FEED_TAB);
   await responsePromise;
-  await waitForPageLoad(page);
   await expect(page.locator(LOCATORS.GLOBAL_FEED_TAB)).toBeVisible();
 };
 
@@ -93,7 +92,6 @@ export const favoriteArticleInFeed = async (
   await expect(favoriteButton).toBeEnabled();
   await favoriteButton.click();
   await responsePromise;
-  await waitForPageLoad(page);
 };
 
 /**
@@ -149,8 +147,8 @@ export const publishArticleAndConfirm = async (
 ): Promise<void> => {
   const responsePromise = page.waitForResponse(
     (response) =>
-      response.url().includes('/api/articles') &&
-      !response.url().includes('/feed') &&
+      response.url().includes(API_PATHS.ARTICLES) &&
+      !response.url().includes(API_PATHS.ARTICLES_FEED) &&
       response.request().method() === 'POST' &&
       response.status() === statusCode
   );
@@ -159,7 +157,7 @@ export const publishArticleAndConfirm = async (
   await expect(page.locator(LOCATORS.PUBLISH_ARTICLE_BUTTON)).toBeEnabled();
   await page.click(LOCATORS.PUBLISH_ARTICLE_BUTTON);
   await responsePromise;
-  await waitForPageLoad(page);
+  await verifySuccessMessage(page, /Published successfully!/i);
 };
 
 /**
@@ -203,7 +201,6 @@ export const followUserFromProfile = async (
   await expect(page.locator(LOCATORS.FOLLOW_BUTTON)).toBeVisible();
   await page.click(LOCATORS.FOLLOW_BUTTON);
   await responsePromise;
-  await waitForPageLoad(page);
 };
 
 /**
@@ -246,7 +243,6 @@ export const addComment = async (
   await page.fill(LOCATORS.COMMENT_TEXTAREA, commentText);
   await page.click(LOCATORS.POST_COMMENT_BUTTON);
   await responsePromise;
-  await waitForPageLoad(page);
 };
 
 /**
@@ -265,7 +261,6 @@ export const deleteComment = async (page: Page, statusCode: number = 204): Promi
 
   await page.click(LOCATORS.DELETE_COMMENT_BUTTON);
   await responsePromise;
-  await waitForPageLoad(page);
 };
 
 /**

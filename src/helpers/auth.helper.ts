@@ -74,11 +74,12 @@ export const getErrorMessages = async (page: Page): Promise<string[]> => {
  * Logout user
  */
 export const logout = async (page: Page): Promise<void> => {
+  await expect(page.locator(LOCATORS.SETTINGS_LINK)).toBeVisible();
   await page.click(LOCATORS.SETTINGS_LINK);
   await expect(page.locator(LOCATORS.LOGOUT_BUTTON)).toBeVisible();
   await page.click(LOCATORS.LOGOUT_BUTTON);
   await waitForPageLoad(page);
-  await expect(page.locator(LOCATORS.LOGOUT_BUTTON)).toBeHidden();
+  await expect(page.locator(LOCATORS.SETTINGS_LINK)).toBeHidden();
 };
 
 /**
