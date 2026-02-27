@@ -268,7 +268,23 @@ GitHub Actions workflow runs automatically on:
 - Pull requests
 - Daily schedule (2 AM UTC)
 
-Configuration: `.github/workflows/playwright.yml`
+**Workflows:**
+- `.github/workflows/playwright.yml` - Main workflow (chromium only for push/PR)
+- `.github/workflows/playwright-parameterized.yml` - Cross-browser testing (scheduled runs)
+
+**Optimizations:**
+- ✅ npm package caching
+- ✅ node_modules caching with package-lock validation
+- ✅ Playwright browser binary caching (~32% faster builds)
+- ✅ Reliable binary linking (always runs npm ci)
+- ✅ Automated Docker application startup/teardown
+
+**Performance:**
+- Cold cache: ~255s per run
+- Warm cache: ~173s per run (~82s saved, 32% faster)
+- Multi-browser scheduled runs: ~32% faster with caching
+
+See [CI_OPTIMIZATION_GUIDE.md](CI_OPTIMIZATION_GUIDE.md) for details on caching strategies.
 
 ## 🛠 Code Quality
 

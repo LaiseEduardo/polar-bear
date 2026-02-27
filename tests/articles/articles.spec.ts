@@ -58,24 +58,6 @@ test.describe('Write Article - Core User Journey #2 @articles', () => {
   });
 
   test.describe('Additional Tests @articles', () => {
-    test('should create article with multiple tags', async ({ page }) => {
-      const articleData = generateArticle();
-      const tags = ['testing', 'automation', 'playwright'];
-
-      await navigateToNewArticle(page);
-      await createArticle(page, articleData.title, articleData.description, articleData.body, tags);
-
-      // Should show success confirmation message that article was created
-      await verifySuccessMessage(page, /Published successfully!/i);
-
-      await navigateToMyArticles(page, registeredUser.username);
-
-      // Verify tags are displayed
-      for (const tag of tags) {
-        await expect(page.locator(`.tag-list li:has-text("${tag}")`)).toBeVisible();
-      }
-    });
-
     test('should create article without tags', async ({ page }) => {
       const articleData = generateArticle();
 

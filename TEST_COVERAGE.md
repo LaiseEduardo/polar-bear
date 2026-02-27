@@ -145,9 +145,9 @@ All tests are organized by feature domain:
 | Metric                 | Value                                       |
 | ---------------------- | ------------------------------------------- |
 | **Total Test Files**   | 3 files                                     |
-| **Total Test Cases**   | 26 tests                                    |
+| **Total Test Cases**   | 25 tests                                    |
 | **Core Journey Tests** | 22 tests (13 auth + 5 articles + 4 feed)    |
-| **Bonus Features**     | 4 tests (Favourite + Tag Filter + Comments) |
+| **Bonus Features**     | 3 tests (Favourite + Tag Filter + Comments) |
 | **Helper Functions**   | 40+ functions                               |
 | **Test Stability**     | 100% (0 flaky tests)                        |
 
@@ -155,9 +155,9 @@ All tests are organized by feature domain:
 
 | Tag         | Description                  | Count    |
 | ----------- | ---------------------------- | -------- |
-| `@core`     | Required assessment journeys | 20 tests |
+| `@core`     | Required assessment journeys | 8 tests  |
 | `@auth`     | Authentication features      | 13 tests |
-| `@articles` | Article & comment features   | 6 tests  |
+| `@articles` | Article & comment features   | 5 tests  |
 | `@feed`     | Feed & social features       | 7 tests  |
 
 ---

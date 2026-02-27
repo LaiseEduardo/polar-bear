@@ -25,6 +25,15 @@ jobs:
           node-version: '18.5.0'
           cache: 'npm'
 
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm ci
 
@@ -59,16 +68,57 @@ jobs:
           node-version: '18.5.0'
           cache: 'npm'
 
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm ci
 
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(npm list @playwright/test --depth=0 --json | jq -r '.dependencies."@playwright/test".version')" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        id: cache-playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-${{ matrix.browser }}
+          restore-keys: |
+            playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-
+            playwright-${{ runner.os }}-
+
       - name: Install Playwright Browsers
+        if: steps.cache-playwright.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Install Playwright system dependencies
+        if: steps.cache-playwright.outputs.cache-hit == 'true'
+        run: npx playwright install-deps ${{ matrix.browser }}
+
+      - name: Start Docker application
+        working-directory: ./app
+        run: |
+          docker compose up -d
+          echo "Waiting for application to be ready..."
+          timeout 60 bash -c 'until curl -f http://localhost:4200 > /dev/null 2>&1; do sleep 2; done' || echo "Application may not be fully ready"
 
       - name: Run Playwright tests
         run: npm run test -- --project=${{ matrix.browser }}
         env:
           CI: true
+          BASE_URL: http://localhost:4200
+
+      - name: Stop Docker application
+        if: always()
+        working-directory: ./app
+        run: docker compose down
 
       - name: Upload test results
         if: always()

@@ -29,6 +29,8 @@ export const LOCATORS = {
   ARTICLE_PREVIEW_TITLE: '.article-preview h1',
   ARTICLE_PREVIEW_AUTHOR: '.article-preview .author',
   ARTICLE_PREVIEW_FAVORITE_BTN: 'button.btn',
+  ARTICLES_EMPTY_STATE: '.article-preview.empty-state',
+  LOADING_ARTICLES: '.article-preview.loading-state',
   POPULAR_TAGS: '.tag-list a',
 
   // Article editor

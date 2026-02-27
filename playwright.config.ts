@@ -33,7 +33,7 @@ export default defineConfig({
   // Shared settings for all projects
   use: {
     // Base URL for the application under test
-    baseURL: process.env.BASE_URL,
+    baseURL: process.env.BASE_URL || 'http://localhost:4200',
 
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',

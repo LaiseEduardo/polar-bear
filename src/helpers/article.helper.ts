@@ -24,10 +24,13 @@ export const clickArticleByIndex = async (page: Page, index: number): Promise<vo
  * Switch to global feed
  */
 export const switchToGlobalFeed = async (page: Page, statusCode: number = 200): Promise<void> => {
+
   const responsePromise = page.waitForResponse(
     (response) => response.url().includes(API_PATHS.ARTICLES) && response.status() === statusCode
   );
 
+  await expect(page.locator(LOCATORS.GLOBAL_FEED_TAB)).toBeVisible();
+  await expect(page.locator(LOCATORS.GLOBAL_FEED_TAB)).toBeEnabled();
   await page.click(LOCATORS.GLOBAL_FEED_TAB);
   await responsePromise;
 };
@@ -43,6 +46,8 @@ export const switchToMyFeed = async (page: Page, statusCode: number = 200): Prom
       response.request().method() === 'GET'
   );
 
+  // Wait for any loading state to complete before switching feeds
+  await expect(page.locator(LOCATORS.LOADING_ARTICLES)).toBeHidden();
   await expect(page.locator(LOCATORS.MY_FEED_TAB)).toBeEnabled();
   await page.click(LOCATORS.MY_FEED_TAB);
   await responsePromise;

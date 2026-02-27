@@ -49,10 +49,10 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
     await navigateToNewArticle(page);
     await createArticle(
       page,
-      `Article by ${userB.username}`,
+      articleData.title,
       articleData.description,
       articleData.body,
-      ['test', 'follow-feed']
+      ['follow-feed', 'user-b-article']
     );
     await logout(page);
   });
@@ -134,7 +134,7 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
       await switchToMyFeed(page);
 
       // My Feed might be empty or show "No articles are here... yet"
-      const noArticlesMessage = page.locator('text=No articles are here... yet');
+      const noArticlesMessage = page.locator(LOCATORS.ARTICLES_EMPTY_STATE);
       const articlesExist = await page.locator(LOCATORS.ARTICLE_PREVIEW).count();
 
       if (articlesExist === 0) {
@@ -187,13 +187,14 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
 
       // Verify unfollow successful
       await expect(page.locator(LOCATORS.FOLLOW_BUTTON)).toBeVisible();
+      await expect(page.locator(LOCATORS.UNFOLLOW_BUTTON)).toBeHidden();
 
       // Check My Feed - article should not be there
       await clickHomeLink(page);
       await switchToMyFeed(page);
 
       // My Feed might be empty or show "No articles are here... yet"
-      const noArticlesMessage = page.locator('text=No articles are here... yet');
+      const noArticlesMessage = page.locator(LOCATORS.ARTICLES_EMPTY_STATE);
       const articlesExist = await page.locator(LOCATORS.ARTICLE_PREVIEW).count();
 
       if (articlesExist === 0) {

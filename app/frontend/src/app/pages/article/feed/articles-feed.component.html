@@ -1,5 +1,5 @@
 @if (isLoading()) {
-  <div class="article-preview">
+  <div class="article-preview loading-state">
     Loading articles...
   </div>
 } @else {
@@ -20,7 +20,7 @@
       }
     </ul>
   } @else {
-    <div class="article-preview">
+    <div class="article-preview empty-state">
       No articles are here... yet.
     </div>
   }
@@ -31,7 +31,7 @@
 <ng-template #articleMeta let-article>
   <div class="article-meta">
     <app-article-meta [article]="article"></app-article-meta>
-    <button class="btn btn-outline-primary btn-sm pull-xs-right" (click)="toggleArticleFavorite(article)">
+    <button class="btn btn-outline-primary btn-sm pull-xs-right favorite-article-toggle" (click)="toggleArticleFavorite(article)">
       <i class="ion-heart"></i> {{ article.favoritesCount }}
     </button>
   </div>
@@ -39,9 +39,9 @@
 
 <ng-template #articlePreview let-article>
   <a routerLink="/article/{{article.slug}}" class="preview-link">
-    <h1>{{ article.title }}</h1>
-    <p>{{ article.description }}</p>
-    <span>Read more...</span>
+    <h1 class="article-title">{{ article.title }}</h1>
+    <p class="article-description">{{ article.description }}</p>
+    <span class="read-more">Read more...</span>
 
     <ul class="tag-list">
       @for (tag of article.tagList; track tag) {
