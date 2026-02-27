@@ -1,0 +1,99 @@
+name: Polar Bear - Cross-Browser Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.5.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript type check
+        run: npm run type-check
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check code formatting
+        run: npx prettier --check "**/*.{ts,json,md}"
+
+  test:
+    name: Tests - ${{ matrix.browser }} on ${{ matrix.os }}
+    needs: code-quality
+    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        # Scheduled job (2am): Run all browsers for comprehensive testing
+        # Push/PR: Run chromium only for fast feedback
+        browser: ${{ github.event_name == 'schedule' && fromJSON('["chromium", "firefox", "webkit"]') || fromJSON('["chromium"]') }}
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.5.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run Playwright tests
+        run: npm test -- --project=${{ matrix.browser }}
+        env:
+          CI: true
+          BASE_URL: http://localhost:4200
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.os }}-${{ matrix.browser }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test results JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 30
+
+  summary:
+    name: Test Summary
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Summary
+        run: |
+          echo "## Test Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Browsers**: ${{ github.event_name == 'schedule' && 'chromium, firefox, webkit' || 'chromium' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: local (http://localhost:4200)" >> $GITHUB_STEP_SUMMARY

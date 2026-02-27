@@ -24,7 +24,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 1,
 
   // Opt out of parallel tests on CI
-  workers: process.env.CI ? 2 : '50%',
+  // Support dynamic workers from CI pipeline parameters
+  workers: process.env.WORKERS ? Number(process.env.WORKERS) : process.env.CI ? 2 : '50%',
 
   // Reporter to use
   reporter: [['html', { open: 'never' }], ['list']],
@@ -51,12 +52,26 @@ export default defineConfig({
   },
 
   // Configure projects for major browsers
-  // run only on Chromium desktop to speed up
+  // Scheduled jobs run all browsers, push/PR runs chromium only
   projects: [
     {
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        viewport: { width: 1920, height: 1080 },
+      },
+    },
+    {
+      name: 'webkit',
+      use: {
+        ...devices['Desktop Safari'],
         viewport: { width: 1920, height: 1080 },
       },
     },
