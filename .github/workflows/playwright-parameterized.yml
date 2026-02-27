@@ -1,59 +1,21 @@
 name: Polar Bear - Cross-Browser Tests
 
 on:
-  push:
-    branches: [main]
-  pull_request:
   schedule:
     - cron: '0 2 * * *'
 
 jobs:
-  code-quality:
-    name: Code Quality Checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18.5.0'
-          cache: 'npm'
-
-      - name: Cache node_modules
-        id: cache-node-modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            node-modules-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run TypeScript type check
-        run: npm run type-check
-
-      - name: Run ESLint
-        run: npm run lint
-
-      - name: Check code formatting
-        run: npx prettier --check "**/*.{ts,json,md}"
-
   test:
     name: Tests - ${{ matrix.browser }} on ${{ matrix.os }}
-    needs: code-quality
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        # Scheduled job (2am): Run all browsers for comprehensive testing
+        # Scheduled job (2am): Run all browsers + mobile for comprehensive testing
         # Push/PR: Run chromium only for fast feedback
-        browser: ${{ github.event_name == 'schedule' && fromJSON('["chromium", "firefox", "webkit"]') || fromJSON('["chromium"]') }}
+        browser: ${{ github.event_name == 'schedule' && fromJSON('["chromium", "firefox", "webkit", "mobile-chrome", "mobile-safari"]') || fromJSON('["chromium"]') }}
         
     steps:
       - name: Checkout code

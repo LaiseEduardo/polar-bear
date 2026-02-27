@@ -162,6 +162,11 @@ All tests are organized by feature domain:
 
 ---
 
+## Browsers Covered 
+
+- 5 browser/device combinations (Chrome, Firefox, Safari, Mobile Chrome, Mobile Safari)
+- 25 end-to-end tests per device
+
 ## ✅ Technical Assessment Requirements
 
 All requirements from the practical assessment have been met:

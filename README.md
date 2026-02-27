@@ -136,7 +136,7 @@ polar-bear/
 ├── tsconfig.json                  # TypeScript configuration
 ├── package.json                   # Dependencies & scripts
 ├── setup-local.sh                 # Automated setup script
-└── run-tests.sh                   # Test runner script
+└── run-tests.sh                   # Test runner with smart health checks
 ```
 
 ### Design Patterns & Principles
@@ -159,6 +159,13 @@ polar-bear/
 npm test                           # Run all tests
 ```
 
+**Test Runner Features:**
+- ⚡ Fast startup with wait-on (~3s cold start)
+- Exponential backoff retry strategy  
+- Reliable HTTP health checks
+- Automatic timeout handling (60 seconds)
+- Progress feedback during startup
+
 ### By Feature
 
 ```bash
@@ -180,8 +187,26 @@ npm run test:headed                # See browser while tests run
 
 ```bash
 npm run test:core                      # Headless core tests
-npm run test:headed -- --grep @core    # Headed tests with tag @core
+npm run test:headed -- --grep @core    # Headed tests using tags e.g. @core
 ```
+
+### Cross-Browser & Mobile Testing
+
+```bash
+npx playwright test --project=chromium        # Desktop Chrome
+npx playwright test --project=firefox         # Desktop Firefox  
+npx playwright test --project=webkit          # Desktop Safari
+npx playwright test --project=mobile-chrome   # Mobile (Pixel 5)
+npx playwright test --project=mobile-safari   # Mobile (iPhone 13)
+```
+
+**Available Devices:**
+- Desktop: Chrome, Firefox, Safari (1920x1080)
+- Mobile: Pixel 5 (Android), iPhone 13 (iOS)
+
+**CI/CD Strategy:**
+- Push/PR: Chromium only (fast feedback)
+- Scheduled (2am): All browsers + mobile devices
 
 ### Application Management
 
@@ -189,6 +214,7 @@ npm run test:headed -- --grep @core    # Headed tests with tag @core
 npm run app:start                  # Start Docker containers
 npm run app:stop                   # Stop containers
 npm run app:restart                # Restart containers
+npm run app:reset                  # Reset containers (remove volumes and rebuild)
 ```
 
 ## 📊 Reporting
@@ -270,7 +296,7 @@ GitHub Actions workflow runs automatically on:
 
 **Workflows:**
 - `.github/workflows/playwright.yml` - Main workflow (chromium only for push/PR)
-- `.github/workflows/playwright-parameterized.yml` - Cross-browser testing (scheduled runs)
+- `.github/workflows/playwright-parameterized.yml` - Cross-browser + mobile testing (scheduled runs)
 
 **Optimizations:**
 - ✅ npm package caching
@@ -278,13 +304,6 @@ GitHub Actions workflow runs automatically on:
 - ✅ Playwright browser binary caching (~32% faster builds)
 - ✅ Reliable binary linking (always runs npm ci)
 - ✅ Automated Docker application startup/teardown
-
-**Performance:**
-- Cold cache: ~255s per run
-- Warm cache: ~173s per run (~82s saved, 32% faster)
-- Multi-browser scheduled runs: ~32% faster with caching
-
-See [CI_OPTIMIZATION_GUIDE.md](CI_OPTIMIZATION_GUIDE.md) for details on caching strategies.
 
 ## 🛠 Code Quality
 

@@ -75,10 +75,22 @@ export default defineConfig({
         viewport: { width: 1920, height: 1080 },
       },
     },
+    {
+      name: 'mobile-chrome',
+      use: {
+        ...devices['Pixel 5'],
+      },
+    },
+    {
+      name: 'mobile-safari',
+      use: {
+        ...devices['iPhone 13'],
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests
-  // Note: Application runs in Docker (managed by npm run app:start or run-tests.sh)
+  // Note: Application runs in Docker (managed by npm run app:start or npm test)
   // Always reuse the existing server since it's managed externally
   webServer: {
     command: 'echo "Application should be running in Docker"',

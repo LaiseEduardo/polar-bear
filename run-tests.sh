@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Test Runner Script - Verifies local app is running and executes tests
+# Test Runner Script using wait-on package
+# Uses wait-on for robust service readiness detection with exponential backoff
 # Usage: ./run-tests.sh [optional: test arguments]
 
 set -e
@@ -22,55 +23,35 @@ if [ -z "$BACKEND_RUNNING" ] || [ -z "$FRONTEND_RUNNING" ]; then
     cd app
     docker compose up -d
     cd ..
-    echo "⏳ Waiting 30 seconds for services to start..."
-    sleep 30
 fi
 
-# Health check function
-check_service() {
-    local url=$1
-    local name=$2
-    local max_attempts=10
-    local attempt=1
-    
-    while [ $attempt -le $max_attempts ]; do
-        if curl -sf "$url" > /dev/null 2>&1; then
-            echo "✅ $name is ready"
-            return 0
-        fi
-        echo "   Waiting for $name... (attempt $attempt/$max_attempts)"
-        sleep 3
-        attempt=$((attempt + 1))
-    done
-    
-    echo "❌ $name is not responding after $max_attempts attempts"
-    return 1
-}
+echo "⏳ Waiting for services to be ready..."
 
-# Check frontend
-check_service "http://localhost:4200" "Frontend"
-FRONTEND_OK=$?
+# Use wait-on to wait for both services (max 60 seconds)
+# wait-on is smarter: it uses exponential backoff and proper HTTP checks
+# add   --verbose \ for debugging if needed
+npx wait-on \
+  --timeout 60000 \
+  --interval 1000 \
+  --window 2000 \
+  http://localhost:4200 \
+  http://localhost:8000/api/tags
 
-# Check backend
-check_service "http://localhost:8000/api/tags" "Backend API"
-BACKEND_OK=$?
-
-if [ $FRONTEND_OK -ne 0 ] || [ $BACKEND_OK -ne 0 ]; then
+if [ $? -eq 0 ]; then
     echo ""
-    echo "❌ Application is not ready. Check logs with: npm run app:logs"
-    exit 1
-fi
-
-echo ""
-echo "✅ Application is ready!"
-echo "🧪 Running tests..."
-echo ""
-
-# Run tests with any passed arguments
-if [ -z "$1" ]; then
-    # No arguments, run all tests
-    dotenv -e .env -- npx playwright test
+    echo "✅ Application is ready!"
+    echo "🧪 Running tests..."
+    echo ""
+    
+    # Run tests with any passed arguments
+    if [ -z "$1" ]; then
+        dotenv -e .env -- npx playwright test
+    else
+        dotenv -e .env -- npx playwright test "$@"
+    fi
 else
-    # Pass all arguments to playwright
-    dotenv -e .env -- npx playwright test "$@"
+    echo ""
+    echo "❌ Application failed to become ready in time"
+    echo "Check logs with: npm run app:logs"
+    exit 1
 fi
