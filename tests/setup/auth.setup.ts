@@ -30,9 +30,9 @@ import { API_PATHS } from '@constants/index';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Paths where authentication state will be saved
-const authFile = 'playwright/.auth/user.json'; // Browser state (cookies, localStorage)
-const userInfoFile = 'playwright/.auth/user-info.json'; // User credentials for tests
+// Paths where authentication state will be saved — resolved from repo root to avoid cwd issues
+const authFile = path.resolve(__dirname, '../../playwright/.auth/user.json');
+const userInfoFile = path.resolve(__dirname, '../../playwright/.auth/user-info.json');
 
 setup('authenticate via API', async ({ page, request, baseURL }) => {
   // ============================================================================

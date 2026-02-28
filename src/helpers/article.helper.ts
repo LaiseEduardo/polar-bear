@@ -1,6 +1,6 @@
 import { expect, Page } from '@playwright/test';
 import { verifySuccessMessage, waitForPageLoad } from '@helpers/index';
-import { API_PATHS, LOCATORS } from '@constants/index';
+import { API_PATHS, HTTP_STATUS, LOCATORS, TIMEOUTS } from '@constants/index';
 
 /**
  * Derives the API base URL from the current page URL.
@@ -64,7 +64,7 @@ export const waitForArticleInFeed = async (
   articleTitle: string,
   options: { timeout?: number; authorUsername?: string; feedType?: 'global' | 'my' } = {}
 ): Promise<void> => {
-  const { timeout = 10000, authorUsername, feedType = 'global' } = options;
+  const { timeout = TIMEOUTS.FEED_POLL, authorUsername, feedType = 'global' } = options;
   const apiBaseURL = getApiBaseURL(page.url());
   const endpoint =
     feedType === 'my'
@@ -113,7 +113,7 @@ export const waitForArticlesNotInFeedByAuthor = async (
   authorUsername: string,
   options: { timeout?: number } = {}
 ): Promise<void> => {
-  const { timeout = 10000 } = options;
+  const { timeout = TIMEOUTS.FEED_POLL } = options;
   const apiBaseURL = getApiBaseURL(page.url());
   const endpoint = `${apiBaseURL}${API_PATHS.ARTICLES_FEED}`;
   const token = await getAuthToken(page);
@@ -145,7 +145,10 @@ export const clickArticleByIndex = async (page: Page, index: number): Promise<vo
 /**
  * Switch to global feed
  */
-export const switchToGlobalFeed = async (page: Page, statusCode: number = 200): Promise<void> => {
+export const switchToGlobalFeed = async (
+  page: Page,
+  statusCode: number = HTTP_STATUS.OK
+): Promise<void> => {
   const responsePromise = page.waitForResponse(
     (response) => response.url().includes(API_PATHS.ARTICLES) && response.status() === statusCode
   );
@@ -159,7 +162,10 @@ export const switchToGlobalFeed = async (page: Page, statusCode: number = 200): 
 /**
  * Switch to my feed (authenticated users)
  */
-export const switchToMyFeed = async (page: Page, statusCode: number = 200): Promise<void> => {
+export const switchToMyFeed = async (
+  page: Page,
+  statusCode: number = HTTP_STATUS.OK
+): Promise<void> => {
   const responsePromise = page.waitForResponse(
     (response) =>
       response.url().includes(API_PATHS.ARTICLES_FEED) &&
@@ -203,7 +209,7 @@ export const favoriteArticleInFeed = async (
     method?: 'POST' | 'DELETE';
   }
 ): Promise<void> => {
-  const { index = 0, statusCode = 200, method = 'POST' } = options || {};
+  const { index = 0, statusCode = HTTP_STATUS.OK, method = 'POST' } = options || {};
 
   const responsePromise = page.waitForResponse(
     (response) =>
@@ -260,7 +266,7 @@ export const favoriteArticleInFeedByTitle = async (
     method?: 'POST' | 'DELETE';
   }
 ): Promise<void> => {
-  const { statusCode = 200, method = 'POST' } = options || {};
+  const { statusCode = HTTP_STATUS.OK, method = 'POST' } = options || {};
 
   const responsePromise = page.waitForResponse(
     (response) =>
@@ -286,7 +292,7 @@ export const createArticle = async (
   description: string,
   body: string,
   tags: string[] = [],
-  statusCode: number = 201
+  statusCode: number = HTTP_STATUS.CREATED
 ): Promise<void> => {
   await page.fill(LOCATORS.ARTICLE_TITLE_INPUT, title);
   await page.fill(LOCATORS.ARTICLE_DESCRIPTION_INPUT, description);
@@ -313,7 +319,7 @@ export const createArticle = async (
  */
 export const publishArticleAndConfirm = async (
   page: Page,
-  statusCode: number = 201
+  statusCode: number = HTTP_STATUS.CREATED
 ): Promise<void> => {
   // Ensure page is stable before clicking (handle any pending JS)
   await page.waitForLoadState('domcontentloaded');
@@ -329,7 +335,7 @@ export const publishArticleAndConfirm = async (
       !response.url().includes(API_PATHS.ARTICLES_FEED) &&
       response.request().method() === 'POST' &&
       response.status() === statusCode,
-    { timeout: 25000 }
+    { timeout: TIMEOUTS.PUBLISH_CONFIRM }
   );
 
   await page.click(LOCATORS.PUBLISH_ARTICLE_BUTTON);
@@ -365,7 +371,7 @@ export const getMyArticles = async (page: Page): Promise<string[]> => {
  */
 export const followUserFromProfile = async (
   page: Page,
-  statusCode: number = 200
+  statusCode: number = HTTP_STATUS.OK
 ): Promise<void> => {
   const responsePromise = page.waitForResponse(
     (response) =>
@@ -385,7 +391,7 @@ export const followUserFromProfile = async (
  */
 export const unfollowUserFromProfile = async (
   page: Page,
-  statusCode: number = 200
+  statusCode: number = HTTP_STATUS.OK
 ): Promise<void> => {
   const responsePromise = page.waitForResponse(
     (response) =>
@@ -407,7 +413,7 @@ export const unfollowUserFromProfile = async (
 export const addComment = async (
   page: Page,
   commentText: string,
-  statusCode: number = 201
+  statusCode: number = HTTP_STATUS.CREATED
 ): Promise<void> => {
   const responsePromise = page.waitForResponse(
     (response) =>
@@ -425,7 +431,10 @@ export const addComment = async (
 /**
  * Delete comment from an article
  */
-export const deleteComment = async (page: Page, statusCode: number = 204): Promise<void> => {
+export const deleteComment = async (
+  page: Page,
+  statusCode: number = HTTP_STATUS.NO_CONTENT
+): Promise<void> => {
   await expect(page.locator(LOCATORS.DELETE_COMMENT_BUTTON)).toBeVisible();
 
   const responsePromise = page.waitForResponse(

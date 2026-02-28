@@ -1,7 +1,7 @@
 import { expect, Page } from '@playwright/test';
 import { navigateToLogin, navigateToRegister, waitForPageLoad } from '@helpers/index';
 import { generateUser } from '@utils/testDataGenerator';
-import { API_PATHS, LOCATORS } from '@constants/index';
+import { API_PATHS, HTTP_STATUS, LOCATORS } from '@constants/index';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -52,7 +52,7 @@ export const login = async (
   page: Page,
   email: string,
   password: string,
-  statusCode: number | number[] = 200
+  statusCode: number | number[] = HTTP_STATUS.OK
 ): Promise<void> => {
   await page.fill(LOCATORS.EMAIL_INPUT, email);
   await page.fill(LOCATORS.PASSWORD_INPUT, password);
@@ -90,7 +90,7 @@ export const initiateUserSignup = async (
  */
 export const clickSignUpAndConfirm = async (
   page: Page,
-  statusCode: number = 201
+  statusCode: number = HTTP_STATUS.CREATED
 ): Promise<void> => {
   const responsePromise = page.waitForResponse(
     (response) =>

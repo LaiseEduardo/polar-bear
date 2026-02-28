@@ -2,6 +2,9 @@
 # This file provides centralized configuration for test execution
 # Supports multiple environments and parameterized test runs
 #
+# NOTE: Tests must target local Docker environment only (no public demo).
+# ENV OVERRIDES (recommended): BASE_URL, WORKERS, RETRIES, TEST_TIMEOUT, EXPECT_TIMEOUT, TRACE, SCREENSHOT, VIDEO
+#
 # USAGE:
 # - Load via playwright.config.ts (primary config source)
 # - Override with environment variables when needed
@@ -22,13 +25,17 @@ timeouts:
 execution:
   fullyParallel: true
   workers: 3 # Limit local concurrency to prevent resource contention with Docker
-  retries: 1 # Number of retries on failure (overridden by CI)
-  forbidOnly: false # Fail if test.only is present (true in CI)
+  retries: 1 # Number of retries on failure
+
+# CI Overrides (used when process.env.CI is set)
+ci:
+  workers: 2
+  retries: 2
 
 # Reporting
 reporting:
   htmlReport: true
-  openReport: 'never' # never | always | on-failure
+  openReport: never # never | always | on-failure
   listReporter: true
 
 # Debugging & Artifacts
@@ -41,17 +48,14 @@ artifacts:
 # Projects are defined in playwright.config.ts but can reference these
 browsers:
   chromium:
-    enabled: true
     viewport:
       width: 1920
       height: 1080
   firefox:
-    enabled: true
     viewport:
       width: 1920
       height: 1080
   webkit:
-    enabled: true
     viewport:
       width: 1920
       height: 1080
@@ -59,10 +63,8 @@ browsers:
 # Mobile Devices
 mobileDevices:
   pixel5:
-    enabled: true
     device: 'Pixel 5'
   iphone13:
-    enabled: true
     device: 'iPhone 13'
 
 # Authentication

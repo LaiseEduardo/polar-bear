@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { LOCATORS, MESSAGES } from '@constants/index';
+import { HTTP_STATUS, LOCATORS, MESSAGES } from '@constants/index';
 import {
   clickSignUpAndConfirm,
   getErrorMessages,
@@ -48,7 +48,10 @@ test.describe('Sign-up & Login - Core User Journey #1 @auth', () => {
       // Attempt login with correct email but wrong password
       // Accept both 401 (per requirement) and 422 (actual API response for validation errors)
       // This app returns 422 for invalid credentials, which is semantically correct
-      await login(page, registeredUser.email, 'wrongpassword', [401, 422]);
+      await login(page, registeredUser.email, 'wrongpassword', [
+        HTTP_STATUS.UNAUTHORIZED,
+        HTTP_STATUS.UNPROCESSABLE_ENTITY,
+      ]);
 
       // Primary assertion: Verify error message is displayed in UI
       await expect(page.locator(LOCATORS.ERROR_MESSAGES).first()).toBeVisible();
@@ -74,7 +77,7 @@ test.describe('Sign-up & Login - Core User Journey #1 @auth', () => {
       await navigateToRegister(page);
       const newEmail = `new_${userData.email}`;
       await initiateUserSignup(page, userData.username, newEmail, userData.password);
-      await clickSignUpAndConfirm(page, 422);
+      await clickSignUpAndConfirm(page, HTTP_STATUS.UNPROCESSABLE_ENTITY);
 
       const errors = await getErrorMessages(page);
       expect(errors.length).toBeGreaterThan(0);
@@ -93,7 +96,7 @@ test.describe('Sign-up & Login - Core User Journey #1 @auth', () => {
       await navigateToRegister(page);
       const newUsername = `new_${userData.username}`;
       await initiateUserSignup(page, newUsername, userData.email, userData.password);
-      await clickSignUpAndConfirm(page, 422);
+      await clickSignUpAndConfirm(page, HTTP_STATUS.UNPROCESSABLE_ENTITY);
     });
 
     test('should validate required registration fields', async ({ page }) => {

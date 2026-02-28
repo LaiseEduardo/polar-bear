@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, type ReporterDescription } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import * as yaml from 'js-yaml';
 import * as fs from 'fs';
@@ -27,64 +27,116 @@ dotenv.config();
 
 // Load YAML configuration
 const configPath = path.join(__dirname, 'config.yaml');
-const yamlConfig: any = yaml.load(fs.readFileSync(configPath, 'utf8'));
+const yamlConfig = yaml.load(fs.readFileSync(configPath, 'utf8')) as Record<string, unknown>;
 
-// Helper: Get config value with ENV override
-const getConfig = (yamlPath: string, envVar?: string, defaultValue?: any): any => {
-  if (envVar && process.env[envVar]) {
-    return process.env[envVar];
-  }
+/** Read a single ENV variable (undefined if unset or empty) */
+const env = (k?: string): string | undefined => (k ? process.env[k] : undefined);
+
+/** Walk a dot-separated path into the YAML object */
+const getByPath = (yamlPath: string): unknown => {
   const keys = yamlPath.split('.');
-  let value = yamlConfig;
+  let value: unknown = yamlConfig;
   for (const key of keys) {
-    value = value?.[key];
+    value = (value as Record<string, unknown>)?.[key];
   }
-  return value !== undefined ? value : defaultValue;
+  return value;
 };
+
+/** String: ENV wins, then YAML, then default */
+function getStr(yamlPath: string, envVar: string | undefined, def: string): string;
+function getStr(yamlPath: string, envVar?: string, def?: string): string | undefined;
+function getStr(yamlPath: string, envVar?: string, def?: string): string | undefined {
+  return env(envVar) ?? (getByPath(yamlPath) as string | undefined) ?? def;
+}
+
+/** Number: ENV wins (cast to number), then YAML, then default */
+function getNum(yamlPath: string, envVar: string | undefined, def: number): number;
+function getNum(yamlPath: string, envVar?: string, def?: number): number | undefined;
+function getNum(yamlPath: string, envVar?: string, def?: number): number | undefined {
+  const v = env(envVar) ?? getByPath(yamlPath);
+  if (v === undefined) return def;
+  const n = Number(v);
+  if (Number.isNaN(n)) throw new Error(`Invalid number for ${envVar ?? yamlPath}: "${v}"`);
+  return n;
+}
+
+/** Boolean: ENV wins ('1','true','yes','on' → true), then YAML, then default */
+function getBool(yamlPath: string, envVar: string | undefined, def: boolean): boolean;
+function getBool(yamlPath: string, envVar?: string, def?: boolean): boolean | undefined;
+function getBool(yamlPath: string, envVar?: string, def?: boolean): boolean | undefined {
+  const v = env(envVar) ?? getByPath(yamlPath);
+  if (v === undefined) return def;
+  if (typeof v === 'boolean') return v;
+  return ['1', 'true', 'yes', 'on'].includes(String(v).toLowerCase());
+}
+
+// Resolve storageState path relative to repo root — avoids cwd-relative path issues
+const storageStatePath = path.resolve(
+  __dirname,
+  getStr('auth.storageStatePath', 'STORAGE_STATE_PATH', 'playwright/.auth/user.json')
+);
+
+// Build reporter list from YAML flags — allows disabling reporters without touching TS
+const reporters: ReporterDescription[] = [];
+if (getBool('reporting.htmlReport', undefined, true)) {
+  reporters.push(['html', { open: getStr('reporting.openReport', undefined, 'never') }]);
+}
+if (getBool('reporting.listReporter', undefined, true)) {
+  reporters.push(['list']);
+}
 
 export default defineConfig({
   testDir: './tests',
 
   // Timeouts from YAML config
-  timeout: getConfig('timeouts.test', undefined, 30000),
+  timeout: getNum('timeouts.test', 'TEST_TIMEOUT', 30000),
 
   // Test execution configuration
   expect: {
-    timeout: getConfig('timeouts.expect', undefined, 25000),
+    timeout: getNum('timeouts.expect', 'EXPECT_TIMEOUT', 25000),
   },
 
   // Run tests in files in parallel
-  fullyParallel: getConfig('execution.fullyParallel', undefined, true),
+  fullyParallel: getBool('execution.fullyParallel', undefined, true),
 
   // Fail the build on CI if you accidentally left test.only in the source code
-  forbidOnly: process.env.CI ? true : getConfig('execution.forbidOnly', undefined, false),
+  forbidOnly: true,
 
-  // Retry on CI only (CI always gets 2 retries)
-  retries: process.env.CI ? 2 : getConfig('execution.retries', undefined, 1),
+  // Retry: CI uses ci.retries from YAML, local uses execution.retries (ENV: RETRIES)
+  retries: process.env.CI
+    ? getNum('ci.retries', undefined, 2)
+    : getNum('execution.retries', 'RETRIES', 1),
 
-  // Workers: ENV > YAML > CI default > local default
-  workers: process.env.WORKERS
-    ? Number(process.env.WORKERS)
-    : process.env.CI
-      ? 2
-      : getConfig('execution.workers', undefined, '50%'),
+  // Workers: CI uses ci.workers from YAML, local uses execution.workers (ENV: WORKERS)
+  workers: process.env.CI
+    ? getNum('ci.workers', undefined, 2)
+    : getNum('execution.workers', 'WORKERS', 3),
 
-  // Reporter to use
-  reporter: [['html', { open: getConfig('reporting.openReport', undefined, 'never') }], ['list']],
+  // Reporter list controlled by reporting.htmlReport / reporting.listReporter YAML flags
+  reporter: reporters,
 
   // Shared settings for all projects
   use: {
     // Base URL: ENV > YAML
-    baseURL: getConfig('baseUrl', 'BASE_URL'),
+    baseURL: getStr('baseUrl', 'BASE_URL'),
 
-    // Artifacts from YAML config (can be overridden by ENV)
-    trace: getConfig('artifacts.trace', undefined, 'retain-on-failure'),
-    screenshot: getConfig('artifacts.screenshot', undefined, 'only-on-failure'),
-    video: getConfig('artifacts.video', undefined, 'retain-on-failure'),
+    // Artifacts — ENV: TRACE / SCREENSHOT / VIDEO
+    trace: getStr('artifacts.trace', 'TRACE', 'retain-on-failure') as
+      | 'off'
+      | 'on'
+      | 'retain-on-failure',
+    screenshot: getStr('artifacts.screenshot', 'SCREENSHOT', 'only-on-failure') as
+      | 'off'
+      | 'on'
+      | 'only-on-failure',
+    video: getStr('artifacts.video', 'VIDEO', 'retain-on-failure') as
+      | 'off'
+      | 'on'
+      | 'retain-on-failure',
 
-    // Timeouts from YAML
-    actionTimeout: getConfig('timeouts.action', undefined, 15000),
-    navigationTimeout: getConfig('timeouts.navigation', undefined, 10000),
+    // Timeouts — ENV: ACTION_TIMEOUT / NAV_TIMEOUT
+    actionTimeout: getNum('timeouts.action', 'ACTION_TIMEOUT', 15000),
+    navigationTimeout: getNum('timeouts.navigation', 'NAV_TIMEOUT', 10000),
   },
 
   /**
@@ -111,8 +163,8 @@ export default defineConfig({
    *    - Run in chromium/firefox/webkit/mobile projects
    *
    * RESULT:
-   * - 13 auth tests: Full E2E UI verification
-   * - 13 other tests: Fast, stable, reuse auth state
+   * - Auth tests run against the real login/register UI (full E2E fidelity)
+   * - All other tests start already logged in via reused auth state (fast + stable)
    */
   projects: [
     // ============================================================================
@@ -121,6 +173,7 @@ export default defineConfig({
     {
       name: 'setup',
       testMatch: /.*\.setup\.ts/, // Matches tests/setup/auth.setup.ts
+      fullyParallel: false, // Auth state must be generated once, deterministically
     },
 
     // ============================================================================
@@ -132,8 +185,8 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: {
-          width: getConfig('browsers.chromium.viewport.width', undefined, 1920),
-          height: getConfig('browsers.chromium.viewport.height', undefined, 1080),
+          width: getNum('browsers.chromium.viewport.width', undefined, 1920),
+          height: getNum('browsers.chromium.viewport.height', undefined, 1080),
         },
         // NO storageState - tests must go through real login UI
       },
@@ -149,10 +202,10 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: {
-          width: getConfig('browsers.chromium.viewport.width', undefined, 1920),
-          height: getConfig('browsers.chromium.viewport.height', undefined, 1080),
+          width: getNum('browsers.chromium.viewport.width', undefined, 1920),
+          height: getNum('browsers.chromium.viewport.height', undefined, 1080),
         },
-        storageState: getConfig('auth.storageStatePath', undefined, 'playwright/.auth/user.json'),
+        storageState: storageStatePath,
       },
     },
     {
@@ -162,10 +215,10 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         viewport: {
-          width: getConfig('browsers.firefox.viewport.width', undefined, 1920),
-          height: getConfig('browsers.firefox.viewport.height', undefined, 1080),
+          width: getNum('browsers.firefox.viewport.width', undefined, 1920),
+          height: getNum('browsers.firefox.viewport.height', undefined, 1080),
         },
-        storageState: getConfig('auth.storageStatePath', undefined, 'playwright/.auth/user.json'),
+        storageState: storageStatePath,
       },
     },
     {
@@ -175,10 +228,10 @@ export default defineConfig({
       use: {
         ...devices['Desktop Safari'],
         viewport: {
-          width: getConfig('browsers.webkit.viewport.width', undefined, 1920),
-          height: getConfig('browsers.webkit.viewport.height', undefined, 1080),
+          width: getNum('browsers.webkit.viewport.width', undefined, 1920),
+          height: getNum('browsers.webkit.viewport.height', undefined, 1080),
         },
-        storageState: getConfig('auth.storageStatePath', undefined, 'playwright/.auth/user.json'),
+        storageState: storageStatePath,
       },
     },
     {
@@ -186,8 +239,8 @@ export default defineConfig({
       testIgnore: /.*\/auth\/.*\.spec\.ts/,
       dependencies: ['setup'],
       use: {
-        ...devices[getConfig('mobileDevices.pixel5.device', undefined, 'Pixel 5')],
-        storageState: getConfig('auth.storageStatePath', undefined, 'playwright/.auth/user.json'),
+        ...devices[getStr('mobileDevices.pixel5.device', undefined, 'Pixel 5') as string],
+        storageState: storageStatePath,
       },
     },
     {
@@ -195,19 +248,18 @@ export default defineConfig({
       testIgnore: /.*\/auth\/.*\.spec\.ts/,
       dependencies: ['setup'],
       use: {
-        ...devices[getConfig('mobileDevices.iphone13.device', undefined, 'iPhone 13')],
-        storageState: getConfig('auth.storageStatePath', undefined, 'playwright/.auth/user.json'),
+        ...devices[getStr('mobileDevices.iphone13.device', undefined, 'iPhone 13') as string],
+        storageState: storageStatePath,
       },
     },
   ],
 
-  // It can run your local dev server before starting the tests
-  // Note: Application runs in Docker (managed by npm run app:start or npm test)
-  // Always reuse the existing server since it's managed externally
+  // Wait until Docker app is reachable before running tests.
+  // Fails fast with a clear error if Docker isn't running — no misleading echo.
   webServer: {
-    command: 'echo "Application should be running in Docker"',
-    url: getConfig('baseUrl', 'BASE_URL', 'http://localhost:4200'),
+    command: 'npx wait-on http://localhost:4200',
+    url: getStr('baseUrl', 'BASE_URL', 'http://localhost:4200'),
     reuseExistingServer: true,
-    timeout: 5 * 1000,
+    timeout: 60 * 1000,
   },
 });

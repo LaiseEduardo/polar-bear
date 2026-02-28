@@ -34,7 +34,7 @@
   "author": "Laise Eduardo",
   "license": "MIT",
   "engines": {
-    "node": ">=24.14.0"
+    "node": ">=20"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",

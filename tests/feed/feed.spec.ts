@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { LOCATORS, MESSAGES } from '@constants/index';
+import { LOCATORS, MESSAGES, TIMEOUTS } from '@constants/index';
 import {
   clickHomeLink,
   clickSignUpAndConfirm,
@@ -40,7 +40,7 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     // Extended timeout for complex setup with multiple user registrations
-    testInfo.setTimeout(60000);
+    testInfo.setTimeout(TIMEOUTS.COMPLEX_SETUP);
 
     // Generate follower user
     userA = generateUser('Follower');
@@ -64,7 +64,7 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
 
   test('should show articles from followed users in Your Feed', async ({ page }) => {
     // Extended timeout for complex multi-user workflow with sequential operations
-    test.setTimeout(60000);
+    test.setTimeout(TIMEOUTS.COMPLEX_SETUP);
 
     // Step 1: User A logs in
     await navigateToLogin(page);
@@ -118,7 +118,7 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
     await waitForArticleInFeed(page, articleData.title, {
       authorUsername: userB.username,
       feedType: 'my', // Check My Feed (authenticated feed endpoint)
-      timeout: 15000, // Allow time for feed to update
+      timeout: TIMEOUTS.FEED_UPDATE, // Allow time for feed to update
     });
 
     // Additional verification: article preview is visible
@@ -141,12 +141,12 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
       await switchToMyFeed(page);
 
       // Wait and verify User B's articles don't appear (with polling for eventual consistency)
-      await waitForArticlesNotInFeedByAuthor(page, userB.username, { timeout: 10000 });
+      await waitForArticlesNotInFeedByAuthor(page, userB.username, { timeout: TIMEOUTS.FEED_POLL });
     });
 
     test('should allow unfollow and the article disappears from feed', async ({ page }) => {
       // Extended timeout for complex multi-user workflow with sequential operations
-      test.setTimeout(60000);
+      test.setTimeout(TIMEOUTS.COMPLEX_SETUP);
 
       // User A logs in and follows User B
       await navigateToLogin(page);
@@ -196,7 +196,9 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
 
       // Wait for feed to update (eventual consistency)
       // Verify User B's articles no longer appear in feed
-      await waitForArticlesNotInFeedByAuthor(page, userB.username, { timeout: 15000 });
+      await waitForArticlesNotInFeedByAuthor(page, userB.username, {
+        timeout: TIMEOUTS.FEED_UPDATE,
+      });
     });
 
     test('should display My Feed tab only when logged in', async ({ page }) => {
@@ -229,7 +231,7 @@ test.describe('Favourite Toggle - Additional Tests #6 @feed', () => {
 
   test('should favorite an article', async ({ page }) => {
     // Extended timeout for article creation and feed operations
-    test.setTimeout(45000);
+    test.setTimeout(TIMEOUTS.FAVORITE_TEST);
 
     // Create a unique article for this test to avoid conflicts with other parallel tests
     const uniqueTitle = `Test Article ${Date.now()}`;
@@ -257,7 +259,7 @@ test.describe('Favourite Toggle - Additional Tests #6 @feed', () => {
 
   test('should unfavorite an article', async ({ page }) => {
     // Extended timeout for article creation and feed operations
-    test.setTimeout(45000);
+    test.setTimeout(TIMEOUTS.FAVORITE_TEST);
 
     // Create a unique article for this test to avoid conflicts with other parallel tests
     const uniqueTitle = `Test Article ${Date.now()}`;

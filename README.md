@@ -12,7 +12,7 @@ A clean, maintainable test automation framework for the RealWorld application us
 
 ### Required
 
-- **Node.js**: v24.14.0+ LTS ([Download](https://nodejs.org/))
+- **Node.js**: v20+ LTS ([Download](https://nodejs.org/))
 - **npm**: v10.0.0+ (comes with Node.js)
 - **Docker Desktop**: Latest version ([Download](https://www.docker.com/products/docker-desktop))
 - **Git**: For cloning the repository
@@ -24,7 +24,7 @@ A clean, maintainable test automation framework for the RealWorld application us
 ### Verify Installation
 
 ```bash
-node --version              # Should be v24.14.0+
+node --version              # Should be v20+
 npm --version               # Should be v10+
 docker --version            # Should show Docker version
 docker compose version      # Should show Docker Compose version
@@ -35,7 +35,7 @@ docker compose version      # Should show Docker Compose version
 This project includes a `.nvmrc` file to ensure the correct Node.js version:
 
 ```bash
-nvm use                     # Automatically uses v24.14.0 from .nvmrc
+nvm use                     # Automatically uses the pinned version from .nvmrc
 ```
 
 ---
@@ -106,6 +106,8 @@ npm run report
 
 ## 🌐 Application Under Test
 
+> Tests run only against the locally dockerized app; the public demo is not used.
+
 - **URL**: http://localhost:4200
 - **API**: http://localhost:8000/api
 - **Spec**: [RealWorld API Documentation](https://realworld-docs.netlify.app/docs/specs/backend-specs/endpoints)
@@ -121,6 +123,8 @@ polar-bear/
 │   │   ├── locators.ts            # UI selectors
 │   │   ├── paths.ts               # API endpoints & path constants
 │   │   ├── messages.ts            # Expected UI messages & strings
+│   │   ├── http.ts                # HTTP status code constants
+│   │   ├── timeouts.ts            # Timeout value constants
 │   │   └── index.ts               # Barrel export
 │   ├── helpers/
 │   │   ├── auth.helper.ts         # Authentication functions
@@ -356,6 +360,6 @@ npm run type-check                 # TypeScript type checking
 AI tools (Copilot - sonnet 4.5) were used for:
 
 - Initial Playwright configuration scaffolding
-- Help creating meaninful documentation
+- Help creating meaningful documentation
 
 All implementation logic, test design, and validation were reviewed and implemented manually.
