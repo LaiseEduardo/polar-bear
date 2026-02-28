@@ -1,14 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { LOCATORS } from '@constants/index';
+import { LOCATORS, MESSAGES } from '@constants/index';
 import {
   clickHomeLink,
   clickSignUpAndConfirm,
   createArticle,
-  favoriteArticleInFeed,
+  favoriteArticleInFeedByTitle,
   filterByTag,
   followUserFromProfile,
-  getArticleTitles,
-  getFavoriteArticleInFeedCounter,
+  getFavoriteCountByArticleTitle,
   getPopularTags,
   initiateUserSignup,
   login,
@@ -24,12 +23,18 @@ import {
   unfollowUserFromProfile,
   verifyLoggedIn,
   verifySuccessMessage,
+  waitForArticleInFeed,
+  waitForArticlesNotInFeedByAuthor,
   waitForPageLoad,
 } from '@helpers/index';
 import { generateArticle, generateUser } from '@utils/testDataGenerator';
-import type { User } from '../../src/types';
+import type { User } from '@type/index';
 
 test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
+  // These tests need multiple users and test the signup/login flow
+  // Override storageState to start with a clean, unauthenticated state
+  test.use({ storageState: { cookies: [], origins: [] } });
+
   let userA: User;
   let userB: User;
 
@@ -47,13 +52,10 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
     await verifyLoggedIn(page);
     const articleData = generateArticle();
     await navigateToNewArticle(page);
-    await createArticle(
-      page,
-      articleData.title,
-      articleData.description,
-      articleData.body,
-      ['follow-feed', 'user-b-article']
-    );
+    await createArticle(page, articleData.title, articleData.description, articleData.body, [
+      'follow-feed',
+      'user-b-article',
+    ]);
     await logout(page);
   });
 
@@ -91,7 +93,7 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
     );
 
     // Verify success confirmation message that article was created
-    await verifySuccessMessage(page, /Published successfully!/i);
+    await verifySuccessMessage(page, MESSAGES.ARTICLE_PUBLISHED);
 
     // Step 6: Logout User B
     await logout(page);
@@ -106,16 +108,14 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
     await switchToMyFeed(page);
 
     // Step 9: Verify User B's article appears in User A's My Feed
-    const feedArticles = await getArticleTitles(page);
-    expect(feedArticles).toContain(articleData.title);
+    // Use polling to handle eventual consistency in feed endpoint
+    await waitForArticleInFeed(page, articleData.title, {
+      authorUsername: userB.username,
+      timeout: 15000, // Allow time for feed to update
+    });
 
+    // Additional verification: article preview is visible
     await expect(page.locator(LOCATORS.ARTICLE_PREVIEW).first()).toBeVisible();
-    // Verify the author is User B
-    const firstArticleAuthor = await page
-      .locator(LOCATORS.ARTICLE_PREVIEW_AUTHOR)
-      .first()
-      .textContent();
-    expect(firstArticleAuthor?.trim()).toBe(userB.username);
   });
 
   test.describe('Follow Feed - Additional Tests @feed', () => {
@@ -133,17 +133,8 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
 
       await switchToMyFeed(page);
 
-      // My Feed might be empty or show "No articles are here... yet"
-      const noArticlesMessage = page.locator(LOCATORS.ARTICLES_EMPTY_STATE);
-      const articlesExist = await page.locator(LOCATORS.ARTICLE_PREVIEW).count();
-
-      if (articlesExist === 0) {
-        await expect(noArticlesMessage).toBeVisible();
-      } else {
-        // If there are articles, verify none are from User B
-        const feedArticles = await page.locator(LOCATORS.ARTICLE_PREVIEW_AUTHOR).allTextContents();
-        expect(feedArticles.every((author) => author.trim() !== userB.username)).toBeTruthy();
-      }
+      // Wait and verify User B's articles don't appear (with polling for eventual consistency)
+      await waitForArticlesNotInFeedByAuthor(page, userB.username, { timeout: 10000 });
     });
 
     test('should allow unfollow and the article disappears from feed', async ({ page }) => {
@@ -193,18 +184,9 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
       await clickHomeLink(page);
       await switchToMyFeed(page);
 
-      // My Feed might be empty or show "No articles are here... yet"
-      const noArticlesMessage = page.locator(LOCATORS.ARTICLES_EMPTY_STATE);
-      const articlesExist = await page.locator(LOCATORS.ARTICLE_PREVIEW).count();
-
-      if (articlesExist === 0) {
-        await expect(noArticlesMessage).toBeVisible();
-      } else {
-        // If there are articles, verify none are from User B
-        await expect(page.locator(LOCATORS.ARTICLE_PREVIEW).last()).toBeVisible();
-        const feedArticles = await page.locator(LOCATORS.ARTICLE_PREVIEW_AUTHOR).allTextContents();
-        expect(feedArticles.every((author) => author.trim() !== userB.username)).toBeTruthy();
-      }
+      // Wait for feed to update (eventual consistency)
+      // Verify User B's articles no longer appear in feed
+      await waitForArticlesNotInFeedByAuthor(page, userB.username, { timeout: 15000 });
     });
 
     test('should display My Feed tab only when logged in', async ({ page }) => {
@@ -226,38 +208,66 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
 });
 
 test.describe('Favourite Toggle - Additional Tests #6 @feed', () => {
+  // Configure tests to run serially to avoid race conditions with favorite counts
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
-    // Register and login a user
-    await registerAndLogin(page);
+    // User is already logged in via storageState (API authentication)
+    // Just navigate to home to ensure page is loaded
+    await page.goto('/');
   });
 
   test('should favorite an article', async ({ page }) => {
+    // Create a unique article for this test to avoid conflicts with other parallel tests
+    const uniqueTitle = `Test Article ${Date.now()}`;
+    await navigateToNewArticle(page);
+    await createArticle(page, uniqueTitle, 'Test description', 'Test body');
+
     await navigateToHome(page);
     await switchToGlobalFeed(page);
 
-    // Get initial favorite count, favorite the article, then get updated count to verify increment
-    const initialFavoriteCount = await getFavoriteArticleInFeedCounter(page, 0);
-    await favoriteArticleInFeed(page);
-    const updatedFavoriteCount = await getFavoriteArticleInFeedCounter(page, 0);
+    // Wait for the article to appear in the feed
+    await waitForArticleInFeed(page, uniqueTitle);
 
-    // Verify counter has changed
-    expect(updatedFavoriteCount).not.toBe(initialFavoriteCount);
+    // Get initial favorite count from the specific article
+    const initialFavoriteCount = await getFavoriteCountByArticleTitle(page, uniqueTitle);
+
+    // Favorite the article by title (more reliable than by index)
+    await favoriteArticleInFeedByTitle(page, uniqueTitle);
+
+    // Get updated count from the same article (by title, not index, to handle feed reordering)
+    const updatedFavoriteCount = await getFavoriteCountByArticleTitle(page, uniqueTitle);
+
+    // Verify counter incremented by exactly 1
+    expect(updatedFavoriteCount).toBe(initialFavoriteCount + 1);
   });
 
   test('should unfavorite an article', async ({ page }) => {
+    // Create a unique article for this test to avoid conflicts with other parallel tests
+    const uniqueTitle = `Test Article ${Date.now()}`;
+    await navigateToNewArticle(page);
+    await createArticle(page, uniqueTitle, 'Test description', 'Test body');
+
     await navigateToHome(page);
     await switchToGlobalFeed(page);
 
-    // Favorite first
-    await favoriteArticleInFeed(page);
+    // Wait for the article to appear in the feed
+    await waitForArticleInFeed(page, uniqueTitle);
 
-    // Then unfavorite the same article
-    const initialFavoriteCount = await getFavoriteArticleInFeedCounter(page, 0);
-    await favoriteArticleInFeed(page, { method: 'DELETE' });
+    // Favorite first (by title)
+    await favoriteArticleInFeedByTitle(page, uniqueTitle);
 
-    // Verify counter has changed
-    const updatedFavoriteCount = await getFavoriteArticleInFeedCounter(page, 0);
-    expect(updatedFavoriteCount).not.toBe(initialFavoriteCount);
+    // Get the favorite count after favoriting
+    const initialFavoriteCount = await getFavoriteCountByArticleTitle(page, uniqueTitle);
+
+    // Then unfavorite the same article (by title)
+    await favoriteArticleInFeedByTitle(page, uniqueTitle, { method: 'DELETE' });
+
+    // Get updated count from the same article (by title)
+    const updatedFavoriteCount = await getFavoriteCountByArticleTitle(page, uniqueTitle);
+
+    // Verify counter decremented by exactly 1
+    expect(updatedFavoriteCount).toBe(initialFavoriteCount - 1);
   });
 });
 

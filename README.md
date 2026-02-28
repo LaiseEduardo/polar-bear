@@ -1,6 +1,6 @@
 # RealWorld Polar Bear Framework
 
-A clean, maintainable test automation framework for the [RealWorld demo application](https://demo.realworld.how) using Playwright and TypeScript.
+A clean, maintainable test automation framework for the RealWorld application using Playwright and TypeScript.
 
 [![Playwright Tests](https://github.com/LaiseEduardo/polar-bear/actions/workflows/playwright.yml/badge.svg)](https://github.com/LaiseEduardo/polar-bear/actions/workflows/playwright.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
@@ -12,8 +12,8 @@ A clean, maintainable test automation framework for the [RealWorld demo applicat
 
 ### Required
 
-- **Node.js**: v18.5.0+ ([Download](https://nodejs.org/))
-- **npm**: v9.0.0+ (comes with Node.js)
+- **Node.js**: v24.14.0+ LTS ([Download](https://nodejs.org/))
+- **npm**: v10.0.0+ (comes with Node.js)
 - **Docker Desktop**: Latest version ([Download](https://www.docker.com/products/docker-desktop))
 - **Git**: For cloning the repository
 
@@ -24,8 +24,8 @@ A clean, maintainable test automation framework for the [RealWorld demo applicat
 ### Verify Installation
 
 ```bash
-node --version              # Should be v18.5.0+
-npm --version               # Should be v9+
+node --version              # Should be v24.14.0+
+npm --version               # Should be v10+
 docker --version            # Should show Docker version
 docker compose version      # Should show Docker Compose version
 ```
@@ -35,7 +35,7 @@ docker compose version      # Should show Docker Compose version
 This project includes a `.nvmrc` file to ensure the correct Node.js version:
 
 ```bash
-nvm use                     # Automatically uses v18.5.0 from .nvmrc
+nvm use                     # Automatically uses v24.14.0 from .nvmrc
 ```
 
 ---
@@ -65,7 +65,7 @@ This automated script will:
 - ✅ Check all prerequisites (Docker, Node.js)
 - ✅ Install npm dependencies
 - ✅ Install Playwright browsers
-- ✅ Create environment configuration
+- ✅ Create environment file (`.env` from `.env.example`)
 - ✅ Start Docker containers
 - ✅ Run smoke tests to verify everything works
 
@@ -84,18 +84,21 @@ nvm use
 # 3. Install dependencies
 npm install
 
-# 4. Install Playwright browsers
+# 4. Create environment file
+cp .env.example .env
+
+# 5. Install Playwright browsers
 npx playwright install --with-deps
 
-# 5. Start the application (Docker)
+# 6. Start the application (Docker)
 npm run app:start
 
-# 6. Wait for services to be ready (~30 seconds)
+# 7. Wait for services to be ready (~30 seconds)
 
-# 7. Run tests
+# 8. Run tests
 npm test
 
-# 8. View test report
+# 9. View test report
 npm run report
 ```
 
@@ -160,8 +163,9 @@ npm test                           # Run all tests
 ```
 
 **Test Runner Features:**
+
 - ⚡ Fast startup with wait-on (~3s cold start)
-- Exponential backoff retry strategy  
+- Exponential backoff retry strategy
 - Reliable HTTP health checks
 - Automatic timeout handling (60 seconds)
 - Progress feedback during startup
@@ -194,17 +198,19 @@ npm run test:headed -- --grep @core    # Headed tests using tags e.g. @core
 
 ```bash
 npx playwright test --project=chromium        # Desktop Chrome
-npx playwright test --project=firefox         # Desktop Firefox  
+npx playwright test --project=firefox         # Desktop Firefox
 npx playwright test --project=webkit          # Desktop Safari
 npx playwright test --project=mobile-chrome   # Mobile (Pixel 5)
 npx playwright test --project=mobile-safari   # Mobile (iPhone 13)
 ```
 
 **Available Devices:**
+
 - Desktop: Chrome, Firefox, Safari (1920x1080)
 - Mobile: Pixel 5 (Android), iPhone 13 (iOS)
 
 **CI/CD Strategy:**
+
 - Push/PR: Chromium only (fast feedback)
 - Scheduled (2am): All browsers + mobile devices
 
@@ -295,10 +301,12 @@ GitHub Actions workflow runs automatically on:
 - Daily schedule (2 AM UTC)
 
 **Workflows:**
+
 - `.github/workflows/playwright.yml` - Main workflow (chromium only for push/PR)
 - `.github/workflows/playwright-parameterized.yml` - Cross-browser + mobile testing (scheduled runs)
 
 **Optimizations:**
+
 - ✅ npm package caching
 - ✅ node_modules caching with package-lock validation
 - ✅ Playwright browser binary caching (~32% faster builds)
@@ -307,14 +315,20 @@ GitHub Actions workflow runs automatically on:
 
 ## 🛠 Code Quality
 
-Run linting:
+Run linting and formatting checks:
 
 ```bash
-npm run lint                       # Check code quality
-npm run lint:fix                   # Auto-fix issues
+npm run lint                       # Check code quality (CI-safe)
+npm run lint:fix                   # Auto-fix linting issues
+npm run format:check               # Check code formatting (CI-safe)
 npm run format                     # Format code with Prettier
 npm run type-check                 # TypeScript type checking
 ```
+
+**CI Pipeline:**
+
+- Uses `lint`, `format:check`, and `type-check` (no auto-fixing)
+- Ensures code meets quality standards without modifying files
 
 ## 📚 Resources
 

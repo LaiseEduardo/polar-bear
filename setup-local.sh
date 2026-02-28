@@ -57,10 +57,10 @@ npx playwright install --with-deps
 echo -e "${GREEN}✅ Playwright browsers installed${NC}"
 echo ""
 
-# Create .env.local if it doesn't exist
+# Create .env if it doesn't exist
 if [ ! -f .env ]; then
-    echo "📝 Creating .env file for local development..."
-    cp .env.local .env
+    echo "📝 Creating .env file from .env.example..."
+    cp .env.example .env
     echo -e "${GREEN}✅ .env file created${NC}"
 else
     echo -e "${YELLOW}⚠️  .env file already exists, skipping...${NC}"
@@ -75,31 +75,23 @@ cd ..
 echo -e "${GREEN}✅ Docker containers started${NC}"
 echo ""
 
-# Wait for services to be ready
-echo "⏳ Waiting for services to start (30 seconds)..."
-sleep 30
+echo "⏳ Waiting for services to be ready..."
 
-# Health check
-echo "🏥 Checking application health..."
-FRONTEND_OK=false
-BACKEND_OK=false
+# Use wait-on to wait for both services (max 60 seconds)
+# wait-on is smarter: it uses exponential backoff and proper HTTP checks
+npx wait-on \
+  --timeout 60000 \
+  --interval 1000 \
+  --window 2000 \
+  http://localhost:4200 \
+  http://localhost:8000/api/tags
 
-if curl -s http://localhost:4200 > /dev/null; then
-    echo -e "${GREEN}✅ Frontend is running on http://localhost:4200${NC}"
-    FRONTEND_OK=true
+if [ $? -eq 0 ]; then
+    echo ""
+    echo -e "${GREEN}✅ Application is ready!${NC}"
 else
-    echo -e "${YELLOW}⚠️  Frontend not responding yet${NC}"
-fi
-
-if curl -s http://localhost:8000/api/tags > /dev/null; then
-    echo -e "${GREEN}✅ Backend API is running on http://localhost:8000/api${NC}"
-    BACKEND_OK=true
-else
-    echo -e "${YELLOW}⚠️  Backend API not responding yet${NC}"
-fi
-echo ""
-if [ "$FRONTEND_OK" = false ] || [ "$BACKEND_OK" = false ]; then
-    echo -e "${RED}❌ One or more services failed to start. Please check Docker logs.${NC}"
+    echo ""
+    echo -e "${RED}❌ Services failed to start within 60 seconds. Please check Docker logs.${NC}"
     exit 1
 fi
 

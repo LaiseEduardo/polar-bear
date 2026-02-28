@@ -1,0 +1,76 @@
+# Test Configuration (YAML)
+# This file provides centralized configuration for test execution
+# Supports multiple environments and parameterized test runs
+#
+# USAGE:
+# - Load via playwright.config.ts (primary config source)
+# - Override with environment variables when needed
+# - Customize per environment (local/CI/staging/prod)
+
+# Application URLs
+baseUrl: 'http://localhost:4200'
+apiUrl: 'http://localhost:8000/api'
+
+# Timeouts (milliseconds)
+timeouts:
+  test: 30000 # Maximum time for a single test
+  expect: 25000 # Maximum time for assertions
+  action: 15000 # Maximum time for actions (click, fill, etc.)
+  navigation: 10000 # Maximum time for page navigation
+
+# Test Execution
+execution:
+  fullyParallel: true
+  workers: '50%' # Number of parallel workers (or percentage)
+  retries: 1 # Number of retries on failure (overridden by CI)
+  forbidOnly: false # Fail if test.only is present (true in CI)
+
+# Reporting
+reporting:
+  htmlReport: true
+  openReport: 'never' # never | always | on-failure
+  listReporter: true
+
+# Debugging & Artifacts
+artifacts:
+  trace: 'retain-on-failure' # off | on | retain-on-failure
+  screenshot: 'only-on-failure' # off | on | only-on-failure
+  video: 'retain-on-failure' # off | on | retain-on-failure | on-first-retry
+
+# Browser/Device Configuration
+# Projects are defined in playwright.config.ts but can reference these
+browsers:
+  chromium:
+    enabled: true
+    viewport:
+      width: 1920
+      height: 1080
+  firefox:
+    enabled: true
+    viewport:
+      width: 1920
+      height: 1080
+  webkit:
+    enabled: true
+    viewport:
+      width: 1920
+      height: 1080
+
+# Mobile Devices
+mobileDevices:
+  pixel5:
+    enabled: true
+    device: 'Pixel 5'
+  iphone13:
+    enabled: true
+    device: 'iPhone 13'
+
+# Authentication
+auth:
+  storageStatePath: 'playwright/.auth/user.json'
+  userInfoPath: 'playwright/.auth/user-info.json'
+
+# Test Data
+testData:
+  # Add any test data configuration here
+  # e.g., default user credentials, test article titles, etc.
