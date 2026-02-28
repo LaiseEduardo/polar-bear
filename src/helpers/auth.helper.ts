@@ -1,7 +1,49 @@
 import { expect, Page } from '@playwright/test';
 import { navigateToLogin, navigateToRegister, waitForPageLoad } from '@helpers/index';
 import { generateUser } from '@utils/testDataGenerator';
-import { API_PATHS, LOCATORS } from '@constants/index';
+import { API_PATHS, HTTP_STATUS, LOCATORS } from '@constants/index';
+import * as fs from 'fs';
+import * as path from 'path';
+
+/**
+ * Get authenticated user credentials from setup project
+ *
+ * PURPOSE:
+ * Retrieves user info (username, email, password) created by the auth.setup.ts project.
+ * Used by tests that run with storageState to access the authenticated user's details.
+ *
+ * WHY THIS IS NEEDED:
+ * - Tests using storageState start already logged in via saved browser state
+ * - But they still need user details for assertions (e.g., navigating to "My Articles")
+ * - This function reads the credentials from the file saved during setup
+ *
+ * USAGE:
+ * ```typescript
+ * test.beforeEach(async ({ page }) => {
+ *   const user = getAuthenticatedUser();
+ *   await navigateToMyArticles(page, user.username);
+ * });
+ * ```
+ *
+ * NOTE:
+ * - Only works in tests using storageState (chromium, firefox, webkit projects)
+ * - Auth tests (chromium-auth) don't use this - they create their own users
+ * - Throws error if setup project hasn't run yet
+ */
+export const getAuthenticatedUser = (): {
+  username: string;
+  email: string;
+  password: string;
+} => {
+  const userInfoPath = path.join(process.cwd(), 'playwright/.auth/user-info.json');
+  if (!fs.existsSync(userInfoPath)) {
+    throw new Error(
+      'User info file not found. Ensure setup project has run to create authenticated state.'
+    );
+  }
+  const userInfo = JSON.parse(fs.readFileSync(userInfoPath, 'utf-8'));
+  return userInfo;
+};
 
 /**
  * Perform user login
@@ -10,17 +52,18 @@ export const login = async (
   page: Page,
   email: string,
   password: string,
-  statusCode: number = 200
+  statusCode: number | number[] = HTTP_STATUS.OK
 ): Promise<void> => {
   await page.fill(LOCATORS.EMAIL_INPUT, email);
   await page.fill(LOCATORS.PASSWORD_INPUT, password);
   await expect(page.locator(LOCATORS.SIGN_IN_BUTTON)).toBeEnabled();
 
+  const expectedCodes = Array.isArray(statusCode) ? statusCode : [statusCode];
   const responsePromise = page.waitForResponse(
     (response) =>
       response.url().includes(API_PATHS.LOGIN) &&
       response.request().method() === 'POST' &&
-      response.status() === statusCode
+      expectedCodes.includes(response.status())
   );
 
   await page.click(LOCATORS.SIGN_IN_BUTTON);
@@ -47,7 +90,7 @@ export const initiateUserSignup = async (
  */
 export const clickSignUpAndConfirm = async (
   page: Page,
-  statusCode: number = 201
+  statusCode: number = HTTP_STATUS.CREATED
 ): Promise<void> => {
   const responsePromise = page.waitForResponse(
     (response) =>

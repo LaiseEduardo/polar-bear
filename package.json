@@ -21,9 +21,11 @@
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "format": "prettier --write \"**/*.{ts,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,json,md}\"",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf test-results playwright-report",
-    "install:browsers": "npx playwright install --with-deps"
+    "install:browsers": "npx playwright install --with-deps",
+    "prepare": "husky"
   },
   "keywords": [
     "playwright",
@@ -31,9 +33,13 @@
   ],
   "author": "Laise Eduardo",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",
     "@playwright/test": "^1.41.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
@@ -42,8 +48,20 @@
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-playwright": "^0.22.0",
+    "husky": "^9.1.7",
+    "js-yaml": "^4.1.1",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.2.4",
     "typescript": "^5.3.3",
     "wait-on": "^7.2.0"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }

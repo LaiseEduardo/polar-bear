@@ -1,30 +1,45 @@
 import { expect, test } from '@playwright/test';
-import { LOCATORS } from '@constants/index';
+import { LOCATORS, MESSAGES } from '@constants/index';
 import {
   addComment,
   clickArticleByIndex,
   createArticle,
   deleteComment,
+  getAuthenticatedUser,
   getComments,
   getMyArticles,
   navigateToHome,
   navigateToMyArticles,
   navigateToNewArticle,
-  registerAndLogin,
   switchToGlobalFeed,
-  verifyLoggedIn,
   verifySuccessMessage,
 } from '@helpers/index';
 import { generateArticle, generateComment } from '@utils/testDataGenerator';
-import type { User } from '../../src/types';
+import type { User } from '@type/index';
 
 test.describe('Write Article - Core User Journey #2 @articles', () => {
   let registeredUser: User;
 
   test.beforeEach(async ({ page }) => {
-    // Register and login a user
-    registeredUser = await registerAndLogin(page);
-    await verifyLoggedIn(page);
+    /**
+     * Authentication via storageState (API-based, not UI)
+     *
+     * This test suite runs with storageState configured in playwright.config.ts:
+     * - Setup project created a user via API and saved browser state
+     * - This browser context automatically loads that saved state
+     * - User is ALREADY logged in when test starts (no UI login needed)
+     * - We just need user details (username, email) for assertions
+     *
+     * Why this is faster:
+     * - No UI navigation to /login
+     * - No form filling
+     * - No waiting for login API response
+     * - Just load pre-authenticated browser state (~70% faster)
+     */
+    registeredUser = getAuthenticatedUser();
+
+    // Navigate to home to ensure page is loaded with authenticated state
+    await page.goto('/');
   });
 
   test('should create an article and display in My Articles List @core', async ({ page }) => {
@@ -47,7 +62,7 @@ test.describe('Write Article - Core User Journey #2 @articles', () => {
     );
 
     // Should show success confirmation message that article was created
-    await verifySuccessMessage(page, /Published successfully!/i);
+    await verifySuccessMessage(page, MESSAGES.ARTICLE_PUBLISHED);
 
     // Navigate to My Articles
     await navigateToMyArticles(page, registeredUser.username);
@@ -65,7 +80,7 @@ test.describe('Write Article - Core User Journey #2 @articles', () => {
       await createArticle(page, articleData.title, articleData.description, articleData.body, []);
 
       // Should show success confirmation message that article was created
-      await verifySuccessMessage(page, /Published successfully!/i);
+      await verifySuccessMessage(page, MESSAGES.ARTICLE_PUBLISHED);
 
       // Navigate to My Articles and verify
       await navigateToMyArticles(page, registeredUser.username);
@@ -89,8 +104,9 @@ test.describe('Write Article - Core User Journey #2 @articles', () => {
 
 test.describe('Comments - Additional Tests #5 @articles', () => {
   test.beforeEach(async ({ page }) => {
-    // Register and login a user
-    await registerAndLogin(page);
+    // User is already logged in via storageState (API authentication)
+    // Just navigate to home to ensure page is loaded
+    await page.goto('/');
   });
 
   test('should allow user to add and delete a comment', async ({ page }) => {

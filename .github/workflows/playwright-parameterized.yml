@@ -16,7 +16,7 @@ jobs:
         # Scheduled job (2am): Run all browsers + mobile for comprehensive testing
         # Push/PR: Run chromium only for fast feedback
         browser: ${{ github.event_name == 'schedule' && fromJSON('["chromium", "firefox", "webkit", "mobile-chrome", "mobile-safari"]') || fromJSON('["chromium"]') }}
-        
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18.5.0'
+          node-version-file: '.nvmrc'
           cache: 'npm'
 
       - name: Cache node_modules

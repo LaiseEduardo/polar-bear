@@ -1,0 +1,78 @@
+# Test Configuration (YAML)
+# This file provides centralized configuration for test execution
+# Supports multiple environments and parameterized test runs
+#
+# NOTE: Tests must target local Docker environment only (no public demo).
+# ENV OVERRIDES (recommended): BASE_URL, WORKERS, RETRIES, TEST_TIMEOUT, EXPECT_TIMEOUT, TRACE, SCREENSHOT, VIDEO
+#
+# USAGE:
+# - Load via playwright.config.ts (primary config source)
+# - Override with environment variables when needed
+# - Customize per environment (local/CI/staging/prod)
+
+# Application URLs
+baseUrl: 'http://localhost:4200'
+apiUrl: 'http://localhost:8000/api'
+
+# Timeouts (milliseconds)
+timeouts:
+  test: 30000 # Maximum time for a single test
+  expect: 25000 # Maximum time for assertions
+  action: 15000 # Maximum time for actions (click, fill, etc.)
+  navigation: 10000 # Maximum time for page navigation
+
+# Test Execution
+execution:
+  fullyParallel: true
+  workers: 3 # Limit local concurrency to prevent resource contention with Docker
+  retries: 1 # Number of retries on failure
+
+# CI Overrides (used when process.env.CI is set)
+ci:
+  workers: 2
+  retries: 2
+
+# Reporting
+reporting:
+  htmlReport: true
+  openReport: never # never | always | on-failure
+  listReporter: true
+
+# Debugging & Artifacts
+artifacts:
+  trace: 'retain-on-failure' # off | on | retain-on-failure
+  screenshot: 'only-on-failure' # off | on | only-on-failure
+  video: 'retain-on-failure' # off | on | retain-on-failure | on-first-retry
+
+# Browser/Device Configuration
+# Projects are defined in playwright.config.ts but can reference these
+browsers:
+  chromium:
+    viewport:
+      width: 1920
+      height: 1080
+  firefox:
+    viewport:
+      width: 1920
+      height: 1080
+  webkit:
+    viewport:
+      width: 1920
+      height: 1080
+
+# Mobile Devices
+mobileDevices:
+  pixel5:
+    device: 'Pixel 5'
+  iphone13:
+    device: 'iPhone 13'
+
+# Authentication
+auth:
+  storageStatePath: 'playwright/.auth/user.json'
+  userInfoPath: 'playwright/.auth/user-info.json'
+
+# Test Data
+testData:
+  # Add any test data configuration here
+  # e.g., default user credentials, test article titles, etc.

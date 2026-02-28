@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import type { Article, User } from '../types';
+import type { Article, User } from '@type/index';
 
 /**
  * Test Data Generator

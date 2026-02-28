@@ -1,6 +1,6 @@
 # RealWorld Polar Bear Framework
 
-A clean, maintainable test automation framework for the [RealWorld demo application](https://demo.realworld.how) using Playwright and TypeScript.
+A clean, maintainable test automation framework for the RealWorld application using Playwright and TypeScript.
 
 [![Playwright Tests](https://github.com/LaiseEduardo/polar-bear/actions/workflows/playwright.yml/badge.svg)](https://github.com/LaiseEduardo/polar-bear/actions/workflows/playwright.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
@@ -12,8 +12,8 @@ A clean, maintainable test automation framework for the [RealWorld demo applicat
 
 ### Required
 
-- **Node.js**: v18.5.0+ ([Download](https://nodejs.org/))
-- **npm**: v9.0.0+ (comes with Node.js)
+- **Node.js**: v20+ LTS ([Download](https://nodejs.org/))
+- **npm**: v10.0.0+ (comes with Node.js)
 - **Docker Desktop**: Latest version ([Download](https://www.docker.com/products/docker-desktop))
 - **Git**: For cloning the repository
 
@@ -24,8 +24,8 @@ A clean, maintainable test automation framework for the [RealWorld demo applicat
 ### Verify Installation
 
 ```bash
-node --version              # Should be v18.5.0+
-npm --version               # Should be v9+
+node --version              # Should be v20+
+npm --version               # Should be v10+
 docker --version            # Should show Docker version
 docker compose version      # Should show Docker Compose version
 ```
@@ -35,7 +35,7 @@ docker compose version      # Should show Docker Compose version
 This project includes a `.nvmrc` file to ensure the correct Node.js version:
 
 ```bash
-nvm use                     # Automatically uses v18.5.0 from .nvmrc
+nvm use                     # Automatically uses the pinned version from .nvmrc
 ```
 
 ---
@@ -65,7 +65,7 @@ This automated script will:
 - ✅ Check all prerequisites (Docker, Node.js)
 - ✅ Install npm dependencies
 - ✅ Install Playwright browsers
-- ✅ Create environment configuration
+- ✅ Create environment file (`.env` from `.env.example`)
 - ✅ Start Docker containers
 - ✅ Run smoke tests to verify everything works
 
@@ -84,24 +84,29 @@ nvm use
 # 3. Install dependencies
 npm install
 
-# 4. Install Playwright browsers
+# 4. Create environment file
+cp .env.example .env
+
+# 5. Install Playwright browsers
 npx playwright install --with-deps
 
-# 5. Start the application (Docker)
+# 6. Start the application (Docker)
 npm run app:start
 
-# 6. Wait for services to be ready (~30 seconds)
+# 7. Wait for services to be ready (~30 seconds)
 
-# 7. Run tests
+# 8. Run tests
 npm test
 
-# 8. View test report
+# 9. View test report
 npm run report
 ```
 
 ---
 
 ## 🌐 Application Under Test
+
+> Tests run only against the locally dockerized app; the public demo is not used.
 
 - **URL**: http://localhost:4200
 - **API**: http://localhost:8000/api
@@ -116,24 +121,32 @@ polar-bear/
 ├── src/
 │   ├── constants/
 │   │   ├── locators.ts            # UI selectors
-│   │   ├── paths.ts               # API endpoints
+│   │   ├── paths.ts               # API endpoints & path constants
+│   │   ├── messages.ts            # Expected UI messages & strings
+│   │   ├── http.ts                # HTTP status code constants
+│   │   ├── timeouts.ts            # Timeout value constants
 │   │   └── index.ts               # Barrel export
 │   ├── helpers/
 │   │   ├── auth.helper.ts         # Authentication functions
-│   │   ├── article.helper.ts      # Article interaction functions
+│   │   ├── article.helper.ts      # Article & feed interaction functions
 │   │   ├── navigation.helper.ts   # Navigation functions
 │   │   └── index.ts               # Barrel export
+│   ├── types/
+│   │   └── index.ts               # Shared TypeScript interfaces (User, Article, Comment)
 │   └── utils/
-│       └── TestDataGenerator.ts   # Test data factory
+│       └── testDataGenerator.ts   # Test data factory (Faker)
 ├── tests/
+│   ├── setup/
+│   │   └── auth.setup.ts          # Global auth setup (storageState)
 │   ├── auth/
 │   │   └── auth.spec.ts           # Authentication tests
 │   ├── articles/
 │   │   └── articles.spec.ts       # Article tests
 │   └── feed/
 │       └── feed.spec.ts           # Feed tests
-├── playwright.config.ts           # Playwright configuration
-├── tsconfig.json                  # TypeScript configuration
+├── config.yaml                    # Centralised test configuration
+├── playwright.config.ts           # Playwright configuration (reads config.yaml)
+├── tsconfig.json                  # TypeScript configuration (path aliases)
 ├── package.json                   # Dependencies & scripts
 ├── setup-local.sh                 # Automated setup script
 └── run-tests.sh                   # Test runner with smart health checks
@@ -143,11 +156,13 @@ polar-bear/
 
 - **Functional Composition**: Modern approach using composable helper functions instead of Page Object Model
 - **Arrow Functions**: Consistent ES6+ syntax throughout the codebase
-- **Centralized Constants**: All UI selectors and API paths in dedicated constant files
+- **Centralized Constants**: UI selectors, API paths, and expected messages in dedicated constant files
+- **YAML Configuration**: `config.yaml` is the single source of truth for URLs, timeouts, workers, and retries — overridable via `.env` and CI environment variables
 - **Dynamic Test Data**: @faker-js/faker v8.3+ for unique, realistic test data generation
-- **API Validation**: Intercept and validate API responses (e.g., 201 status on registration)
-- **Explicit Waits**: Playwright's auto-waiting mechanisms, no arbitrary `sleep()` calls
-- **Test Isolation**: Each test is fully independent with unique data - no test dependencies
+- **API Validation**: Intercept network responses for mutation assertions (e.g., POST 201); direct API polling via `page.context().request` for reliable feed state verification
+- **Explicit Waits**: Playwright's auto-waiting + `toPass()` retry loops — no arbitrary `sleep()` calls
+- **Test Isolation**: Each test is fully independent with unique data — no shared state between tests
+- **StorageState Auth**: Setup project registers once and saves auth state; all feature tests reuse it without re-logging in
 - **Hash-based Routing**: Angular HashLocationStrategy support (`/#/path` URLs)
 - **Single Responsibility**: Each helper function has one clear, focused purpose
 
@@ -160,8 +175,9 @@ npm test                           # Run all tests
 ```
 
 **Test Runner Features:**
+
 - ⚡ Fast startup with wait-on (~3s cold start)
-- Exponential backoff retry strategy  
+- Exponential backoff retry strategy
 - Reliable HTTP health checks
 - Automatic timeout handling (60 seconds)
 - Progress feedback during startup
@@ -194,17 +210,19 @@ npm run test:headed -- --grep @core    # Headed tests using tags e.g. @core
 
 ```bash
 npx playwright test --project=chromium        # Desktop Chrome
-npx playwright test --project=firefox         # Desktop Firefox  
+npx playwright test --project=firefox         # Desktop Firefox
 npx playwright test --project=webkit          # Desktop Safari
 npx playwright test --project=mobile-chrome   # Mobile (Pixel 5)
 npx playwright test --project=mobile-safari   # Mobile (iPhone 13)
 ```
 
 **Available Devices:**
+
 - Desktop: Chrome, Firefox, Safari (1920x1080)
 - Mobile: Pixel 5 (Android), iPhone 13 (iOS)
 
 **CI/CD Strategy:**
+
 - Push/PR: Chromium only (fast feedback)
 - Scheduled (2am): All browsers + mobile devices
 
@@ -295,10 +313,12 @@ GitHub Actions workflow runs automatically on:
 - Daily schedule (2 AM UTC)
 
 **Workflows:**
+
 - `.github/workflows/playwright.yml` - Main workflow (chromium only for push/PR)
 - `.github/workflows/playwright-parameterized.yml` - Cross-browser + mobile testing (scheduled runs)
 
 **Optimizations:**
+
 - ✅ npm package caching
 - ✅ node_modules caching with package-lock validation
 - ✅ Playwright browser binary caching (~32% faster builds)
@@ -307,14 +327,20 @@ GitHub Actions workflow runs automatically on:
 
 ## 🛠 Code Quality
 
-Run linting:
+Run linting and formatting checks:
 
 ```bash
-npm run lint                       # Check code quality
-npm run lint:fix                   # Auto-fix issues
+npm run lint                       # Check code quality (CI-safe)
+npm run lint:fix                   # Auto-fix linting issues
+npm run format:check               # Check code formatting (CI-safe)
 npm run format                     # Format code with Prettier
 npm run type-check                 # TypeScript type checking
 ```
+
+**CI Pipeline:**
+
+- Uses `lint`, `format:check`, and `type-check` (no auto-fixing)
+- Ensures code meets quality standards without modifying files
 
 ## 📚 Resources
 
@@ -326,3 +352,14 @@ npm run type-check                 # TypeScript type checking
 ## 👤 Author
 
 **Laise Eduardo**
+
+---
+
+## 🤖 AI Assistance Disclosure
+
+AI tools (Copilot - sonnet 4.5) were used for:
+
+- Initial Playwright configuration scaffolding
+- Help creating meaningful documentation
+
+All implementation logic, test design, and validation were reviewed and implemented manually.
