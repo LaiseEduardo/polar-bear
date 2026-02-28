@@ -21,7 +21,7 @@ For more information on how to this works with other frontends/backends, head ov
 Ensure you have Python 3 and Node.js installed on your system. The current project dependency versions are:
 
 - Python 3.10
-- Node.js 24.14.0
+- Node.js 18.5.0
 
 ## Installation
 
