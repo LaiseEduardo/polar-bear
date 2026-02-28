@@ -21,7 +21,7 @@ timeouts:
 # Test Execution
 execution:
   fullyParallel: true
-  workers: '50%' # Number of parallel workers (or percentage)
+  workers: 3 # Limit local concurrency to prevent resource contention with Docker
   retries: 1 # Number of retries on failure (overridden by CI)
   forbidOnly: false # Fail if test.only is present (true in CI)
 

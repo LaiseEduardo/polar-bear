@@ -119,24 +119,30 @@ polar-bear/
 ├── src/
 │   ├── constants/
 │   │   ├── locators.ts            # UI selectors
-│   │   ├── paths.ts               # API endpoints
+│   │   ├── paths.ts               # API endpoints & path constants
+│   │   ├── messages.ts            # Expected UI messages & strings
 │   │   └── index.ts               # Barrel export
 │   ├── helpers/
 │   │   ├── auth.helper.ts         # Authentication functions
-│   │   ├── article.helper.ts      # Article interaction functions
+│   │   ├── article.helper.ts      # Article & feed interaction functions
 │   │   ├── navigation.helper.ts   # Navigation functions
 │   │   └── index.ts               # Barrel export
+│   ├── types/
+│   │   └── index.ts               # Shared TypeScript interfaces (User, Article, Comment)
 │   └── utils/
-│       └── TestDataGenerator.ts   # Test data factory
+│       └── testDataGenerator.ts   # Test data factory (Faker)
 ├── tests/
+│   ├── setup/
+│   │   └── auth.setup.ts          # Global auth setup (storageState)
 │   ├── auth/
 │   │   └── auth.spec.ts           # Authentication tests
 │   ├── articles/
 │   │   └── articles.spec.ts       # Article tests
 │   └── feed/
 │       └── feed.spec.ts           # Feed tests
-├── playwright.config.ts           # Playwright configuration
-├── tsconfig.json                  # TypeScript configuration
+├── config.yaml                    # Centralised test configuration
+├── playwright.config.ts           # Playwright configuration (reads config.yaml)
+├── tsconfig.json                  # TypeScript configuration (path aliases)
 ├── package.json                   # Dependencies & scripts
 ├── setup-local.sh                 # Automated setup script
 └── run-tests.sh                   # Test runner with smart health checks
@@ -146,11 +152,13 @@ polar-bear/
 
 - **Functional Composition**: Modern approach using composable helper functions instead of Page Object Model
 - **Arrow Functions**: Consistent ES6+ syntax throughout the codebase
-- **Centralized Constants**: All UI selectors and API paths in dedicated constant files
+- **Centralized Constants**: UI selectors, API paths, and expected messages in dedicated constant files
+- **YAML Configuration**: `config.yaml` is the single source of truth for URLs, timeouts, workers, and retries — overridable via `.env` and CI environment variables
 - **Dynamic Test Data**: @faker-js/faker v8.3+ for unique, realistic test data generation
-- **API Validation**: Intercept and validate API responses (e.g., 201 status on registration)
-- **Explicit Waits**: Playwright's auto-waiting mechanisms, no arbitrary `sleep()` calls
-- **Test Isolation**: Each test is fully independent with unique data - no test dependencies
+- **API Validation**: Intercept network responses for mutation assertions (e.g., POST 201); direct API polling via `page.context().request` for reliable feed state verification
+- **Explicit Waits**: Playwright's auto-waiting + `toPass()` retry loops — no arbitrary `sleep()` calls
+- **Test Isolation**: Each test is fully independent with unique data — no shared state between tests
+- **StorageState Auth**: Setup project registers once and saves auth state; all feature tests reuse it without re-logging in
 - **Hash-based Routing**: Angular HashLocationStrategy support (`/#/path` URLs)
 - **Single Responsibility**: Each helper function has one clear, focused purpose
 
@@ -340,3 +348,14 @@ npm run type-check                 # TypeScript type checking
 ## 👤 Author
 
 **Laise Eduardo**
+
+---
+
+## 🤖 AI Assistance Disclosure
+
+AI tools (Copilot - sonnet 4.5) were used for:
+
+- Initial Playwright configuration scaffolding
+- Help creating meaninful documentation
+
+All implementation logic, test design, and validation were reviewed and implemented manually.

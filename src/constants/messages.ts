@@ -3,5 +3,5 @@ export const MESSAGES = {
   ARTICLE_PUBLISHED: /Published successfully!/i,
 
   // Error messages
-  INVALID_CREDENTIALS: 'email or password',
+  INVALID_CREDENTIALS: 'Invalid email or password',
 } as const;

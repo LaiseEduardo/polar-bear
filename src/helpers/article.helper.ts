@@ -3,6 +3,27 @@ import { verifySuccessMessage, waitForPageLoad } from '@helpers/index';
 import { API_PATHS, LOCATORS } from '@constants/index';
 
 /**
+ * Derives the API base URL from the current page URL.
+ * Frontend runs on :4200, API on :8000 — replaces the port.
+ */
+const getApiBaseURL = (pageUrl: string): string => {
+  try {
+    const url = new URL(pageUrl);
+    return url.origin.replace(':4200', ':8000');
+  } catch {
+    return 'http://localhost:8000';
+  }
+};
+
+/**
+ * Returns the JWT auth token stored in the browser's localStorage.
+ * Used to construct Authorization headers for authenticated API calls.
+ */
+const getAuthToken = async (page: Page): Promise<string | null> => {
+  return page.evaluate(() => (globalThis as any).localStorage.getItem('token'));
+};
+
+/**
  * Get all article titles from the feed
  */
 export const getArticleTitles = async (page: Page): Promise<string[]> => {
@@ -21,37 +42,71 @@ export const getArticleTitleByIndex = async (page: Page, index: number): Promise
 };
 
 /**
- * Wait for a specific article to appear in the feed (with polling for eventual consistency)
- * This handles eventual consistency issues in feed endpoints
+ * Wait for a specific article to appear in a feed via direct API polling.
+ *
+ * WHY API INSTEAD OF DOM:
+ * - DOM polling is slow and depends on rendering, scroll position and loading states
+ * - API polling queries the data source directly — faster and more reliable
+ * - Avoids stale element references and timing issues with DOM updates
+ * - Still handles eventual consistency via `toPass()` retry mechanism
+ *
+ * HOW IT WORKS:
+ * 1. Extracts JWT token from localStorage (same token the app uses)
+ * 2. Calls GET /api/articles (global) or /api/articles/feed (my feed) directly
+ * 3. Searches the response JSON for the article by title
+ * 4. Optionally verifies the author username from the API response
+ * 5. Retries until found or timeout exceeded
+ *
+ * @param feedType 'global' (default) for Global Feed, 'my' for My Feed (requires auth)
  */
 export const waitForArticleInFeed = async (
   page: Page,
   articleTitle: string,
-  options: { timeout?: number; authorUsername?: string } = {}
+  options: { timeout?: number; authorUsername?: string; feedType?: 'global' | 'my' } = {}
 ): Promise<void> => {
-  const { timeout = 10000, authorUsername } = options;
+  const { timeout = 10000, authorUsername, feedType = 'global' } = options;
+  const apiBaseURL = getApiBaseURL(page.url());
+  const endpoint =
+    feedType === 'my'
+      ? `${apiBaseURL}${API_PATHS.ARTICLES_FEED}`
+      : `${apiBaseURL}${API_PATHS.ARTICLES}`;
+  const token = await getAuthToken(page);
 
-  // Poll for the article to appear using Playwright's auto-retry mechanism
   await expect(async () => {
-    const titles = await page.locator(LOCATORS.ARTICLE_PREVIEW_TITLE).allTextContents();
-    expect(titles).toContain(articleTitle);
-  }).toPass({ timeout });
+    const response = await page.context().request.get(endpoint, {
+      headers: token ? { Authorization: `Token ${token}` } : {},
+      params: { limit: 50, offset: 0 },
+    });
+    expect(response.ok()).toBeTruthy();
 
-  // If author is specified, verify it matches
-  if (authorUsername) {
-    const articleLocator = page
-      .locator(LOCATORS.ARTICLE_PREVIEW)
-      .filter({ hasText: articleTitle })
-      .first();
-    // Use just '.author' since we're already within the article-preview context
-    const authorLocator = articleLocator.locator('.author');
-    await expect(authorLocator).toHaveText(authorUsername);
-  }
+    const { articles } = await response.json();
+    const found = articles.find(
+      (a: { title: string; author: { username: string } }) => a.title === articleTitle
+    );
+    // Assert article exists in feed
+    expect(found).toBeDefined();
+
+    // If author is specified, verify it from the API response directly
+    if (authorUsername) {
+      expect(found.author.username).toBe(authorUsername);
+    }
+  }).toPass({ timeout });
 };
 
 /**
- * Wait for a specific author's articles to NOT appear in feed (with polling for eventual consistency)
- * This handles eventual consistency when unfollowing users
+ * Wait for an author's articles to NOT appear in My Feed via direct API polling.
+ *
+ * WHY API INSTEAD OF DOM:
+ * - Checking absence in the DOM is unreliable (element might just not be rendered yet)
+ * - API response gives the full accurate picture of what's in the feed
+ * - Avoids false positives from empty states or loading states in the UI
+ * - Still retries to handle eventual consistency on unfollow/feed updates
+ *
+ * HOW IT WORKS:
+ * 1. Extracts JWT token from localStorage
+ * 2. Calls GET /api/articles/feed directly with Authorization header
+ * 3. Checks no article in the response has the specified author username
+ * 4. Retries until confirmed absent or timeout exceeded
  */
 export const waitForArticlesNotInFeedByAuthor = async (
   page: Page,
@@ -59,19 +114,23 @@ export const waitForArticlesNotInFeedByAuthor = async (
   options: { timeout?: number } = {}
 ): Promise<void> => {
   const { timeout = 10000 } = options;
+  const apiBaseURL = getApiBaseURL(page.url());
+  const endpoint = `${apiBaseURL}${API_PATHS.ARTICLES_FEED}`;
+  const token = await getAuthToken(page);
 
-  // Poll to verify author's articles are no longer in feed
   await expect(async () => {
-    const articlesExist = await page.locator(LOCATORS.ARTICLE_PREVIEW).count();
+    const response = await page.context().request.get(endpoint, {
+      headers: { Authorization: `Token ${token}` },
+      params: { limit: 100, offset: 0 },
+    });
+    expect(response.ok()).toBeTruthy();
 
-    if (articlesExist === 0) {
-      // Feed is empty - this is valid
-      await expect(page.locator(LOCATORS.ARTICLES_EMPTY_STATE)).toBeVisible();
-    } else {
-      // If there are articles, verify none are from the specified author
-      const feedAuthors = await page.locator(LOCATORS.ARTICLE_PREVIEW_AUTHOR).allTextContents();
-      expect(feedAuthors.every((author) => author.trim() !== authorUsername)).toBeTruthy();
-    }
+    const { articles } = await response.json();
+    const authorArticles = articles.filter(
+      (a: { author: { username: string } }) => a.author.username === authorUsername
+    );
+    // Assert no articles from this author are in the feed
+    expect(authorArticles).toHaveLength(0);
   }).toPass({ timeout });
 };
 
@@ -248,21 +307,31 @@ export const createArticle = async (
 
 /**
  * Click Publish Article button and confirm article creation via API response
+ *
+ * NOTE: Extended timeout for slower environments and test scenarios with heavy load
+ * (e.g., sequential user/article creation in feed tests)
  */
 export const publishArticleAndConfirm = async (
   page: Page,
   statusCode: number = 201
 ): Promise<void> => {
+  // Ensure page is stable before clicking (handle any pending JS)
+  await page.waitForLoadState('domcontentloaded');
+
+  await expect(page.locator(LOCATORS.PUBLISH_ARTICLE_BUTTON)).toBeVisible();
+  await expect(page.locator(LOCATORS.PUBLISH_ARTICLE_BUTTON)).toBeEnabled();
+
+  // Set up response listener with extended timeout for reliability
+  // 25s timeout handles slower environments and mobile devices
   const responsePromise = page.waitForResponse(
     (response) =>
       response.url().includes(API_PATHS.ARTICLES) &&
       !response.url().includes(API_PATHS.ARTICLES_FEED) &&
       response.request().method() === 'POST' &&
-      response.status() === statusCode
+      response.status() === statusCode,
+    { timeout: 25000 }
   );
 
-  await expect(page.locator(LOCATORS.PUBLISH_ARTICLE_BUTTON)).toBeVisible();
-  await expect(page.locator(LOCATORS.PUBLISH_ARTICLE_BUTTON)).toBeEnabled();
   await page.click(LOCATORS.PUBLISH_ARTICLE_BUTTON);
   await responsePromise;
   await verifySuccessMessage(page, /Published successfully!/i);

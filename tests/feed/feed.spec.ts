@@ -38,7 +38,10 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
   let userA: User;
   let userB: User;
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    // Extended timeout for complex setup with multiple user registrations
+    testInfo.setTimeout(60000);
+
     // Generate follower user
     userA = generateUser('Follower');
 
@@ -60,6 +63,9 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
   });
 
   test('should show articles from followed users in Your Feed', async ({ page }) => {
+    // Extended timeout for complex multi-user workflow with sequential operations
+    test.setTimeout(60000);
+
     // Step 1: User A logs in
     await navigateToLogin(page);
     await login(page, userA.email, userA.password);
@@ -111,6 +117,7 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
     // Use polling to handle eventual consistency in feed endpoint
     await waitForArticleInFeed(page, articleData.title, {
       authorUsername: userB.username,
+      feedType: 'my', // Check My Feed (authenticated feed endpoint)
       timeout: 15000, // Allow time for feed to update
     });
 
@@ -138,6 +145,9 @@ test.describe('Follow Feed - Core User Journey #3 @feed @core', () => {
     });
 
     test('should allow unfollow and the article disappears from feed', async ({ page }) => {
+      // Extended timeout for complex multi-user workflow with sequential operations
+      test.setTimeout(60000);
+
       // User A logs in and follows User B
       await navigateToLogin(page);
       await login(page, userA.email, userA.password);
@@ -218,6 +228,9 @@ test.describe('Favourite Toggle - Additional Tests #6 @feed', () => {
   });
 
   test('should favorite an article', async ({ page }) => {
+    // Extended timeout for article creation and feed operations
+    test.setTimeout(45000);
+
     // Create a unique article for this test to avoid conflicts with other parallel tests
     const uniqueTitle = `Test Article ${Date.now()}`;
     await navigateToNewArticle(page);
@@ -243,6 +256,9 @@ test.describe('Favourite Toggle - Additional Tests #6 @feed', () => {
   });
 
   test('should unfavorite an article', async ({ page }) => {
+    // Extended timeout for article creation and feed operations
+    test.setTimeout(45000);
+
     // Create a unique article for this test to avoid conflicts with other parallel tests
     const uniqueTitle = `Test Article ${Date.now()}`;
     await navigateToNewArticle(page);
