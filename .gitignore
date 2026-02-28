@@ -25,3 +25,4 @@ build/
 .env.local
 .env.*.local
 
+INTERVIEW_ASSESSMENT.md
