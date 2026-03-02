@@ -55,11 +55,23 @@ jobs:
 
       - name: Install Playwright Browsers
         if: steps.cache-playwright.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps ${{ matrix.browser }}
+        run: |
+          BROWSER=${{ matrix.browser }}
+          case "$BROWSER" in
+            mobile-chrome) BROWSER=chromium ;;
+            mobile-safari) BROWSER=webkit ;;
+          esac
+          npx playwright install --with-deps $BROWSER
 
       - name: Install Playwright system dependencies
         if: steps.cache-playwright.outputs.cache-hit == 'true'
-        run: npx playwright install-deps ${{ matrix.browser }}
+        run: |
+          BROWSER=${{ matrix.browser }}
+          case "$BROWSER" in
+            mobile-chrome) BROWSER=chromium ;;
+            mobile-safari) BROWSER=webkit ;;
+          esac
+          npx playwright install-deps $BROWSER
 
       - name: Start Docker application
         working-directory: ./app
